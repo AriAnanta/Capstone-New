@@ -1,13 +1,19 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { usePerkaras } from '@/api/hooks';
+import { Pencil, Trash2, FileText } from 'lucide-react';
+import { usePerkaras, useDeletePerkara } from '@/api/hooks';
 import { CASE_TYPES } from '@/constants';
 import { formatDate, formatStatus } from '@/utils/format';
 import { getStatusClass } from '@/pages/helpers';
+import { useAuthStore } from '@/store/authStore';
 
 const CasesPage = () => {
     const [typeFilter, setTypeFilter] = useState('');
     const { data: perkaras = [], isLoading } = usePerkaras();
+    const role = useAuthStore((state) => state.role);
+    const canCreate = role === 'panitera';
+    const deletePerkara = useDeletePerkara();
+    const [deletingId, setDeletingId] = useState(null);
 
     const filtered = useMemo(() => {
         if (!typeFilter) return perkaras;
@@ -37,12 +43,14 @@ const CasesPage = () => {
                             ))}
                         </select>
                     </label>
-                    <Link
-                        to="/cases/new"
-                        className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
-                    >
-                        Tambah perkara
-                    </Link>
+                    {canCreate && (
+                        <Link
+                            to="/cases/new"
+                            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
+                        >
+                            Tambah perkara
+                        </Link>
+                    )}
                 </div>
             </div>
 
@@ -84,9 +92,41 @@ const CasesPage = () => {
                                     </td>
                                     <td className="px-4 py-3">{formatDate(perkara.tanggal_masuk)}</td>
                                     <td className="px-4 py-3 text-right">
-                                        <Link to={`/documents?case=${perkara.id}`} className="text-sm font-semibold text-indigo-600 hover:text-indigo-500">
-                                            Lihat dokumen
-                                        </Link>
+                                        <div className="flex items-center justify-end gap-2">
+                                            <Link
+                                                to={`/documents?case=${perkara.id}`}
+                                                className="rounded-full border border-slate-200 p-2 text-slate-600 hover:border-slate-300 hover:text-slate-900"
+                                                title="Lihat dokumen"
+                                            >
+                                                <FileText className="h-4 w-4" />
+                                            </Link>
+                                            {canCreate && (
+                                                <>
+                                                    <Link
+                                                        to={`/cases/${perkara.id}/edit`}
+                                                        className="rounded-full border border-slate-200 p-2 text-slate-600 hover:border-slate-300 hover:text-slate-900"
+                                                        title="Edit perkara"
+                                                    >
+                                                        <Pencil className="h-4 w-4" />
+                                                    </Link>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            if (!window.confirm('Hapus perkara ini?')) return;
+                                                            setDeletingId(perkara.id);
+                                                            deletePerkara.mutate(perkara.id, {
+                                                                onSettled: () => setDeletingId(null),
+                                                            });
+                                                        }}
+                                                        className="rounded-full border border-slate-200 p-2 text-rose-500 hover:border-rose-200 hover:text-rose-600"
+                                                        title="Hapus perkara"
+                                                        disabled={deletingId === perkara.id && deletePerkara.isPending}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
                                     </td>
                                 </tr>
                             ))}

@@ -3,6 +3,7 @@
 namespace App\Services\Llm;
 
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -77,8 +78,8 @@ class GeminiClient
         return [];
     }
 
-    protected function sendRequest(string $model, string $apiKey, string $prompt, int $timeout){
-        
+    protected function sendRequest(string $model, string $apiKey, string $prompt, int $timeout): Response
+    {
         $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
 
         return Http::timeout($timeout)

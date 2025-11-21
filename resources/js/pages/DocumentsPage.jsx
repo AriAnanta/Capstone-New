@@ -1,8 +1,10 @@
 import { useState, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useDocuments } from '@/api/hooks';
+import { Eye, Pencil, Trash2 } from 'lucide-react';
+import { useDocuments, useDeleteDocument } from '@/api/hooks';
 import { DOCUMENT_TYPES } from '@/constants';
 import { formatDate } from '@/utils/format';
+import { useAuthStore } from '@/store/authStore';
 
 const useQueryParam = (key) => {
     const { search } = useLocation();
@@ -11,6 +13,10 @@ const useQueryParam = (key) => {
 
 const DocumentsPage = () => {
     const caseParam = useQueryParam('case');
+    const role = useAuthStore((state) => state.role);
+    const canUpload = role === 'panitera';
+    const deleteDocument = useDeleteDocument();
+    const [deletingId, setDeletingId] = useState(null);
     const [typeFilter, setTypeFilter] = useState('');
     const { data: documents = [], isLoading } = useDocuments(caseParam ? { perkara_id: caseParam } : {});
 
@@ -27,27 +33,29 @@ const DocumentsPage = () => {
                     <p className="text-sm text-slate-600">Kelola dokumen hasil pemindaian, OCR, dan ringkasan.</p>
                 </div>
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                    <Link
-                        to="/documents/upload"
-                        className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
-                    >
-                        Unggah dokumen
-                    </Link>
-                <label className="text-sm text-slate-600">
-                    Filter jenis dokumen
-                    <select
-                        className="mt-1 block rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                        value={typeFilter}
-                        onChange={(event) => setTypeFilter(event.target.value)}
-                    >
-                        <option value="">Semua jenis</option>
-                        {DOCUMENT_TYPES.map((item) => (
-                            <option key={item.value} value={item.value}>
-                                {item.label}
-                            </option>
-                        ))}
-                    </select>
-                </label>
+                    {canUpload && (
+                        <Link
+                            to="/documents/upload"
+                            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
+                        >
+                            Unggah dokumen
+                        </Link>
+                    )}
+                    <label className="text-sm text-slate-600">
+                        Filter jenis dokumen
+                        <select
+                            className="mt-1 block rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                            value={typeFilter}
+                            onChange={(event) => setTypeFilter(event.target.value)}
+                        >
+                            <option value="">Semua jenis</option>
+                            {DOCUMENT_TYPES.map((item) => (
+                                <option key={item.value} value={item.value}>
+                                    {item.label}
+                                </option>
+                            ))}
+                        </select>
+                    </label>
                 </div>
             </div>
 
@@ -85,12 +93,41 @@ const DocumentsPage = () => {
                                     <td className="px-4 py-3">{formatDate(document.tanggal_upload)}</td>
                                     <td className="px-4 py-3">{document.summaries?.length ?? 0} ringkasan</td>
                                     <td className="px-4 py-3 text-right">
-                                        <Link
-                                            to={`/documents/${document.id}`}
-                                            className="text-sm font-semibold text-indigo-600 hover:text-indigo-500"
-                                        >
-                                            Detail
-                                        </Link>
+                                        <div className="flex items-center justify-end gap-2">
+                                            <Link
+                                                to={`/documents/${document.id}`}
+                                                className="rounded-full border border-slate-200 p-2 text-slate-600 hover:border-slate-300 hover:text-slate-900"
+                                                title="Lihat detail"
+                                            >
+                                                <Eye className="h-4 w-4" />
+                                            </Link>
+                                            {canUpload && (
+                                                <>
+                                                    <Link
+                                                        to={`/documents/${document.id}/edit`}
+                                                        className="rounded-full border border-slate-200 p-2 text-slate-600 hover:border-slate-300 hover:text-slate-900"
+                                                        title="Edit dokumen"
+                                                    >
+                                                        <Pencil className="h-4 w-4" />
+                                                    </Link>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            if (!window.confirm('Hapus dokumen ini?')) return;
+                                                            setDeletingId(document.id);
+                                                            deleteDocument.mutate(document.id, {
+                                                                onSettled: () => setDeletingId(null),
+                                                            });
+                                                        }}
+                                                        className="rounded-full border border-slate-200 p-2 text-rose-500 hover:border-rose-200 hover:text-rose-600"
+                                                        title="Hapus dokumen"
+                                                        disabled={deletingId === document.id && deleteDocument.isPending}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
                                     </td>
                                 </tr>
                             ))}

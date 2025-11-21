@@ -1,19 +1,22 @@
 import { useState } from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { FileText, LayoutDashboard, LogOut, Settings, Users, Scale } from 'lucide-react';
+import { FileText, LayoutDashboard, LogOut, Settings, Users, Scale, UploadCloud } from 'lucide-react';
 import { logout as logoutRequest } from '@/api/auth';
 import { useAuthStore } from '@/store/authStore';
 import clsx from 'clsx';
 
 const navItems = [
-    { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-    { to: '/cases', label: 'Perkara', icon: Scale },
-    { to: '/documents', label: 'Dokumen', icon: FileText },
-    { to: '/settings', label: 'Pengaturan', icon: Settings },
+    { to: '/', label: 'Dashboard', icon: LayoutDashboard, roles: ['panitera', 'hakim'] },
+    { to: '/cases', label: 'Perkara', icon: Scale, roles: ['panitera', 'hakim'] },
+    { to: '/documents', label: 'Dokumen', icon: FileText, roles: ['panitera', 'hakim'] },
+    { to: '/documents/upload', label: 'Unggah Dokumen', icon: UploadCloud, roles: ['panitera'] },
+    { to: '/settings', label: 'Pengaturan', icon: Settings, roles: ['panitera'] },
 ];
 
 const Sidebar = () => {
     const location = useLocation();
+    const role = useAuthStore((state) => state.role);
+    const availableItems = navItems.filter((item) => !item.roles || item.roles.includes(role));
 
     return (
         <aside className="hidden w-60 shrink-0 border-r border-slate-200 bg-white/80 backdrop-blur md:block">
@@ -22,9 +25,11 @@ const Sidebar = () => {
                 <h1 className="text-lg font-bold text-slate-900">Dashboard</h1>
             </div>
             <nav className="space-y-1 px-3">
-                {navItems.map((item) => {
+                {availableItems.map((item) => {
                     const Icon = item.icon;
-                    const active = location.pathname === item.to;
+                    const active =
+                        location.pathname === item.to ||
+                        (item.to !== '/' && location.pathname.startsWith(`${item.to}/`));
                     return (
                         <NavLink
                             key={item.to}

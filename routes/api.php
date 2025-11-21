@@ -16,12 +16,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('me', [AuthController::class, 'me']);
     Route::post('logout', [AuthController::class, 'logout']);
 
-    Route::apiResource('perkaras', PerkaraController::class);
+    Route::middleware('role:panitera,hakim')->group(function () {
+        Route::apiResource('perkaras', PerkaraController::class);
 
-    Route::apiResource('documents', DocumentController::class);
-    Route::get('documents/{document}/summaries', [SummaryController::class, 'index']);
-    Route::post('documents/{document}/summaries', [SummaryController::class, 'store']);
+        Route::apiResource('documents', DocumentController::class);
+        Route::get('documents/{document}/download', [DocumentController::class, 'download']);
+        Route::get('documents/{document}/summaries', [SummaryController::class, 'index']);
+        Route::post('documents/{document}/summaries', [SummaryController::class, 'store']);
 
-    Route::apiResource('regulations', RegulationController::class)->except(['show']);
+        Route::apiResource('regulations', RegulationController::class)->except(['show']);
+    });
 });
 

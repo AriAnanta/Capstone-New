@@ -61,6 +61,18 @@ class DocumentController extends Controller
         return (new DocumentResource($document))->response();
     }
 
+    public function download(Document $document)
+    {
+        if (!Storage::disk('local')->exists($document->path_file)) {
+            abort(404, 'File dokumen tidak ditemukan');
+        }
+
+        $filename = basename($document->path_file) ?: 'dokumen-perkara';
+        $absolutePath = Storage::disk('local')->path($document->path_file);
+
+        return response()->download($absolutePath, $filename);
+    }
+
     public function update(UpdateDocumentRequest $request, Document $document, DocumentProcessingPipeline $pipeline): JsonResponse
     {
         $document->update($request->safe()->except('tags'));

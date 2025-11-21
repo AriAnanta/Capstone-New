@@ -20,6 +20,13 @@ export const usePerkaras = (params = undefined) =>
         queryFn: () => withFallback(apiClient.get('/perkaras', { params }), mockPerkaras),
     });
 
+export const usePerkara = (perkaraId) =>
+    useQuery({
+        enabled: Boolean(perkaraId),
+        queryKey: ['perkara', perkaraId],
+        queryFn: () => withFallback(apiClient.get(`/perkaras/${perkaraId}`), mockPerkaras[0]),
+    });
+
 export const useDocuments = (params = undefined) =>
     useQuery({
         queryKey: ['documents', serializeParams(params)],
@@ -44,6 +51,31 @@ export const useCreatePerkara = () => {
 
     return useMutation({
         mutationFn: (payload) => apiClient.post('/perkaras', payload).then(unwrapData),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['perkaras'] });
+        },
+    });
+};
+
+export const useUpdatePerkara = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ id, ...payload }) => apiClient.put(`/perkaras/${id}`, payload).then(unwrapData),
+        onSuccess: (perkara) => {
+            queryClient.invalidateQueries({ queryKey: ['perkaras'] });
+            if (perkara?.id) {
+                queryClient.setQueryData(['perkara', perkara.id], perkara);
+            }
+        },
+    });
+};
+
+export const useDeletePerkara = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (id) => apiClient.delete(`/perkaras/${id}`),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['perkaras'] });
         },
@@ -86,6 +118,31 @@ export const useUploadDocument = () => {
             if (document?.id) {
                 queryClient.setQueryData(['document', document.id], document);
             }
+        },
+    });
+};
+
+export const useUpdateDocument = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ id, ...payload }) => apiClient.patch(`/documents/${id}`, payload).then(unwrapData),
+        onSuccess: (document) => {
+            queryClient.invalidateQueries({ queryKey: ['documents'] });
+            if (document?.id) {
+                queryClient.setQueryData(['document', document.id], document);
+            }
+        },
+    });
+};
+
+export const useDeleteDocument = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (id) => apiClient.delete(`/documents/${id}`),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['documents'] });
         },
     });
 };
