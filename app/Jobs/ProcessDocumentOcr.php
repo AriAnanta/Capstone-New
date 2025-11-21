@@ -10,6 +10,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class ProcessDocumentOcr implements ShouldQueue
 {
@@ -33,12 +34,14 @@ class ProcessDocumentOcr implements ShouldQueue
             return;
         }
 
-        $absolutePath = storage_path('app/' . $document->path_file);
+        $disk = Storage::disk('local');
 
-        if (! file_exists($absolutePath)) {
+        if (! $disk->exists($document->path_file)) {
             Log::warning('Dokumen tidak ditemukan untuk OCR', ['document_id' => $document->id]);
             return;
         }
+
+        $absolutePath = $disk->path($document->path_file);
 
         $text = $ocrService->extractText($absolutePath, $document->format_file);
 

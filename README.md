@@ -96,8 +96,9 @@ routes/web.php     -> Blade fallback untuk SPA.
 1. Admin/panitera mengunggah dokumen melalui endpoint `POST /api/documents` (ditangani `DocumentController@store`). File disimpan, metadata dicatat.
 2. `DocumentProcessingPipeline` dijalankan dan mendorong job `ProcessDocumentOcr` ke queue.
 3. **ProcessDocumentOcr** menjalankan `OcrService`:
-	- Menjalankan command OCR sesuai tipe file.
-	- Menyimpan teks hasil OCR di kolom `teks_ocr` dokumen.
+	- Mengecek apakah PDF sudah memiliki teks (hasil ekspor Word, dsb). Jika iya, langkah OCR dilewati dan teks langsung disalin.
+	- Jika teks tidak tersedia, menjalankan command OCR sesuai tipe file.
+	- Menyimpan teks hasil ekstraksi di kolom `teks_ocr` dokumen.
 	- Mem-queue `GenerateDocumentSummary`.
 4. **GenerateDocumentSummary** memanggil Gemini melalui `SummarizerService`, menyimpan ringkasan ke tabel `summaries`, lalu mem-queue `GenerateLegalReferences`.
 5. **GenerateLegalReferences** menghasilkan referensi peraturan atau rekomendasi hukum tambahan, menyimpannya ke tabel `legal_recommendations`.
