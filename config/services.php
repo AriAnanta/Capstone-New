@@ -37,8 +37,10 @@ return [
 
     'gemini' => [
         'key' => env('GEMINI_API_KEY'),
+        'keys' => array_values(array_filter(array_map('trim', explode(',', env('GEMINI_API_KEYS', env('GEMINI_API_KEY', '')))))),
         'model' => env('GEMINI_MODEL', 'gemini-1.5-flash'),
         'safety' => [],
+        'timeout' => (int) env('GEMINI_TIMEOUT', 60),
     ],
 
     'ocr' => [

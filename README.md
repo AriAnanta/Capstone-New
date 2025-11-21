@@ -36,7 +36,7 @@ Platform ini mendigitalisasi proses Pengadilan Tinggi Agama: dari unggah dokumen
 	- `APP_URL`, `FRONTEND_URL` (opsional jika dipisah)
 	- `DB_*`
 	- `SANCTUM_STATEFUL_DOMAINS` jika memakai domain berbeda
-	- `GEMINI_API_KEY`, `GEMINI_MODEL`
+	- `GEMINI_API_KEY` atau `GEMINI_API_KEYS` (pisahkan dengan koma untuk rotasi beberapa key), `GEMINI_MODEL`
 	- `OCR_PDF_COMMAND`, `OCR_IMAGE_COMMAND` (misal `tesseract {input} {output}`)
 	- `QUEUE_CONNECTION=database`
 
@@ -135,6 +135,7 @@ Halaman detail dokumen memperlihatkan status masing-masing tahap (OCR, ringkasan
 ## Operasional & tips
 - Jalankan `php artisan queue:failed` untuk memantau kegagalan job. Gunakan `php artisan queue:retry {id}` setelah perbaikan.
 - Pastikan command OCR memiliki hak akses baca file di `storage/app`. Jika menggunakan tool eksternal, bungkus path dengan tanda kutip untuk Windows.
+- Anda dapat memasukkan beberapa API key Gemini sekaligus di `GEMINI_API_KEYS=key1,key2,...`; backend akan merotasi key tersebut untuk mempercepat throughput dan menghindari limit satu akun.
 - Untuk integrasi auth produksi, ganti mekanisme mock login di `resources/js/store/authStore.js` dengan call nyata ke endpoint Sanctum login dan simpan token.
 - Sesuaikan policy publikasi putusan di `PublicDecisionController` agar hanya menampilkan dokumen yang sudah lolos verifikasi.
 
