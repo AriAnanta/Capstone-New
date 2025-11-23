@@ -79,20 +79,24 @@ class GeminiClient
     }
 
     protected function sendRequest(string $model, string $apiKey, string $prompt, int $timeout): Response
-    {
-        $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
+{
+    $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
 
-        return Http::timeout($timeout)
-            ->retry(1, 500)
-            ->post($endpoint, [
-                'contents' => [[
-                    'parts' => [[
-                        'text' => $prompt,
-                    ]],
-                ]],
-                'safetySettings' => config('services.gemini.safety', []),
-            ]);
-    }
+    return Http::timeout($timeout)
+        ->retry(1, 500)
+        ->post($endpoint, [
+            'contents' => [
+                [
+                    'parts' => [
+                        [
+                            'text' => $prompt
+                        ]
+                    ]
+                ]
+            ],
+            'safetySettings' => config('services.gemini.safety', [])
+        ]);
+}
 
     protected function extractPayload(array $data): array
     {
