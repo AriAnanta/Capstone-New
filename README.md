@@ -26,7 +26,53 @@ Platform ini mendigitalisasi proses Pengadilan Tinggi Agama: dari unggah dokumen
 	- PHP >= 8.2 + Composer
 	- Node.js >= 20 + npm
 	- Database MySQL/MariaDB (atau driver lain sesuai `.env`)
-	- Eksekutor OCR (contoh: Tesseract CLI) dan API key Gemini
+	- Tool OCR & konversi PDF → gambar (Tesseract wajib, ImageMagick atau Poppler sebagai fallback)
+	- API key Gemini
+
+### Instalasi tool OCR & konverter (Windows/Laragon)
+
+1. **Tesseract OCR**
+	- Unduh installer resmi dari <https://github.com/tesseract-ocr/tesseract/wiki>. Pilih paket yang sudah menyertakan data bahasa (tessdata).
+	- Jalankan installer dan centang opsi "Add Tesseract to the system PATH" agar perintah `tesseract.exe` dikenali terminal.
+	- Verifikasi dari PowerShell:
+		```powershell
+		tesseract -v
+		```
+
+2. **ImageMagick (disarankan)**
+	- Unduh versi terbaru *ImageMagick-7.x.x-Q16-HDRI* dari <https://imagemagick.org/script/download.php#windows> (centang opsi "Install legacy utilities" dan "Add to PATH").
+	- Setelah instalasi, cek:
+		```powershell
+		magick -version
+		```
+	- ImageMagick dipakai untuk mengubah PDF screenshot menjadi PNG bernilai tinggi (300 DPI) sebelum di-OCR.
+
+3. **Poppler (opsional, alternatif ImageMagick)**
+	- Ambil build Windows dari <https://github.com/oschwartz10612/poppler-windows/releases>.
+	- Ekstrak ke folder permanen, mis. `C:\tools\poppler`, lalu tambahkan `C:\tools\poppler\Library\bin` ke PATH.
+	- Uji dengan `pdftoppm -h`. Poppler menyediakan utilitas `pdftoppm` yang cepat untuk mengekspor PDF ke PNG.
+
+4. **Sesuaikan `.env`**
+	Tambahkan atau perbarui variabel berikut (sesuaikan path instalasi Anda, contoh di bawah untuk Windows):
+	```dotenv
+	OCR_PDF_COMMAND="\"C:\\Program Files\\Tesseract-OCR\\tesseract.exe\" {input} {output} pdf"
+	OCR_IMAGE_COMMAND="\"C:\\Program Files\\Tesseract-OCR\\tesseract.exe\" {input} {output}"
+	# Gunakan salah satu, cukup isi ImageMagick atau Poppler
+	OCR_PDF_TO_IMAGE_COMMAND="\"C:\\Program Files\\ImageMagick-7.1.1-Q16-HDRI\\magick.exe\" -density 300 {input} {output}.png"
+	# atau
+	# OCR_PDF_TO_IMAGE_COMMAND="\"C:\\tools\\poppler\\Library\\bin\\pdftoppm.exe\" -png -r 300 {input} {output}"
+	```
+	Placeholder yang dipakai aplikasi:
+	- `{input}` → path absolut file sumber.
+	- `{output}` → dasar nama file keluaran (tanpa ekstensi). Aplikasi akan mengisi otomatis.
+	- `{output_dir}` → path direktori temp (opsional, bila perintah eksternal membutuhkannya).
+
+5. **Sinkronkan konfigurasi**
+	Setelah mengubah `.env`, jalankan:
+	```powershell
+	php artisan config:clear
+	```
+	Jika Anda menjalankan queue worker (mis. `php artisan queue:work`), hentikan lalu jalankan ulang supaya worker memuat konfigurasi terbaru.
 
 2. **Salin konfigurasi**
 	```powershell

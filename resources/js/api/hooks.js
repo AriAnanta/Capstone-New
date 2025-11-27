@@ -174,3 +174,31 @@ export const useReprocessDocument = (documentId) => {
         },
     });
 };
+
+// Legal Advisor hooks
+export const useLegalCaseTypes = () =>
+    useQuery({
+        queryKey: ['legal-case-types'],
+        queryFn: () => apiClient.get('/legal-advisor/case-types').then(unwrapData),
+    });
+
+export const useLegalRecommendations = () => {
+    return useMutation({
+        mutationFn: (payload) =>
+            apiClient.post('/legal-advisor/recommendations', payload).then(unwrapData),
+    });
+};
+
+export const useLegalAnalysis = () => {
+    return useMutation({
+        mutationFn: (payload) =>
+            apiClient.post('/legal-advisor/analyze', payload).then(unwrapData),
+    });
+};
+
+export const useLegalRecommendationsForCase = (perkaraId) =>
+    useQuery({
+        enabled: Boolean(perkaraId),
+        queryKey: ['legal-recommendations', perkaraId],
+        queryFn: () => apiClient.get(`/legal-advisor/perkara/${perkaraId}`).then(unwrapData),
+    });

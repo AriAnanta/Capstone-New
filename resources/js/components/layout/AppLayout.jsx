@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import { 
     FileText, LayoutDashboard, LogOut, Settings, Users, Scale, 
-    UploadCloud, Menu, X, ChevronDown, Zap, Bell, Search
+    UploadCloud, Menu, X, ChevronDown, Zap, Bell, Search, BookOpen
 } from 'lucide-react';
 import { logout as logoutRequest } from '@/api/auth';
 import { useAuthStore } from '@/store/authStore';
@@ -12,6 +12,7 @@ const navItems = [
     { to: '/', label: 'Dashboard', icon: LayoutDashboard, roles: ['panitera', 'hakim'] },
     { to: '/cases', label: 'Perkara', icon: Scale, roles: ['panitera', 'hakim'] },
     { to: '/documents', label: 'Dokumen', icon: FileText, roles: ['panitera', 'hakim'] },
+    { to: '/legal-advisor', label: 'Asisten Hukum', icon: BookOpen, roles: ['hakim'] },
     { to: '/documents/upload', label: 'Unggah Dokumen', icon: UploadCloud, roles: ['panitera'] },
     { to: '/settings', label: 'Pengaturan', icon: Settings, roles: ['panitera'] },
 ];

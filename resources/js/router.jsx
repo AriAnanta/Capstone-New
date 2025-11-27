@@ -12,6 +12,7 @@ import PublicPortalPage from '@/pages/PublicPortalPage';
 import LoginPage from '@/pages/LoginPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 import SettingsPage from '@/pages/SettingsPage';
+import LegalAdvisorPage from '@/pages/LegalAdvisorPage';
 import { useAuthStore } from '@/store/authStore';
 
 const ProtectedRoute = ({ allowed, redirectTo = '/public/putusan' }) => {
@@ -43,6 +44,11 @@ export const AppRouter = () => (
                     <Route path="documents" element={<DocumentsPage />} />
                     <Route path="documents/:documentId" element={<DocumentDetailPage />} />
                     <Route path="settings" element={<SettingsPage />} />
+
+                    {/* Hakim only routes */}
+                    <Route element={<ProtectedRoute allowed={['hakim']} />}>
+                        <Route path="legal-advisor" element={<LegalAdvisorPage />} />
+                    </Route>
 
                     <Route element={<ProtectedRoute allowed={['panitera']} />}>
                         <Route path="cases/new" element={<CaseCreatePage />} />

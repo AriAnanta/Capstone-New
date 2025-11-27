@@ -46,6 +46,21 @@ return [
     'ocr' => [
         'pdf_command' => env('OCR_PDF_COMMAND'),
         'image_command' => env('OCR_IMAGE_COMMAND'),
+        'pdf_to_image_command' => env('OCR_PDF_TO_IMAGE_COMMAND'),
+        
+        // Konfigurasi Tesseract
+        'tesseract_path' => env('TESSERACT_PATH', 'tesseract'),
+        'tesseract_lang' => env('TESSERACT_LANG', 'ind+eng'),
+        'tesseract_oem' => env('TESSERACT_OEM', '3'), // 0=Legacy, 1=LSTM, 2=Legacy+LSTM, 3=Default
+        'tesseract_psm' => env('TESSERACT_PSM', '3'), // Page segmentation mode
+        
+        // Preprocessing options
+        'preprocessing' => [
+            'enabled' => env('OCR_PREPROCESSING_ENABLED', true),
+            'min_width' => env('OCR_MIN_WIDTH', 1000),
+            'target_width' => env('OCR_TARGET_WIDTH', 1500),
+            'enhanced_target_width' => env('OCR_ENHANCED_TARGET_WIDTH', 2000),
+        ],
     ],
 
 ];

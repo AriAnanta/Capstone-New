@@ -33,6 +33,11 @@ class GeminiClient
         return $this->callGemini($prompt, 'legal_reference');
     }
 
+    public function analyze(string $prompt): array
+    {
+        return $this->callGemini($prompt, 'analysis');
+    }
+
     protected function callGemini(string $prompt, string $taskType): array
     {
         $model = config('services.gemini.model', 'gemini-1.5-flash');

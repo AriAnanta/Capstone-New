@@ -31,5 +31,8 @@ class DatabaseSeeder extends Seeder
         ]);
 
         User::factory(5)->create();
+
+        // Seed regulations
+        $this->call(RegulationSeeder::class);
     }
 }
