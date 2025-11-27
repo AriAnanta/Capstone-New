@@ -138,7 +138,7 @@ const DocumentEditPage = () => {
                     <button
                         type="submit"
                         disabled={updateDocument.isPending}
-                        className="rounded-lg bg-indigo-600 px-6 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-70"
+                        className="rounded-lg bg-emerald-700 px-6 py-2 text-sm font-semibold text-white hover:bg-emerald-600 disabled:opacity-70"
                     >
                         {updateDocument.isPending ? 'Menyimpan...' : 'Simpan perubahan'}
                     </button>

@@ -8,10 +8,10 @@ const NotFoundPage = () => (
             Kami tidak menemukan halaman yang Anda tuju. Silakan kembali ke dashboard atau gunakan navigasi utama.
         </p>
         <div className="mt-6 flex gap-3">
-            <Link to="/" className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">
+            <Link to="/" className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600">
                 Kembali ke dashboard
             </Link>
-            <Link to="/public/putusan" className="rounded-lg border border-slate-900 px-4 py-2 text-sm font-semibold text-slate-900">
+            <Link to="/public/putusan" className="rounded-lg border border-emerald-700 px-4 py-2 text-sm font-semibold text-emerald-700">
                 Portal publik
             </Link>
         </div>
