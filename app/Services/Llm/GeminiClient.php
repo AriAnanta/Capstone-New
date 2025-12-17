@@ -167,8 +167,25 @@ class GeminiClient
         $jenis = $context['jenis_perkara'] ?? 'umum';
 
         return <<<PROMPT
-Anda adalah asisten hukum Pengadilan Tinggi Agama. Buat ringkasan bergaya {$type} untuk perkara jenis {$jenis}.
-Ringkas dengan struktur JSON {"summary":"...","reasoning":"...","confidence":0-1}
+Anda adalah asisten hukum Pengadilan Tinggi Agama. Buat ringkasan untuk perkara jenis {$jenis}.
+
+JENIS RINGKASAN: {$type}
+
+INSTRUKSI FORMAT:
+1. Gunakan teks biasa (plain text), JANGAN gunakan format Markdown seperti **, *, #, atau simbol formatting lainnya
+2. Gunakan paragraf dan baris baru untuk memisahkan bagian
+3. Untuk daftar, gunakan angka atau huruf biasa (1., 2., a., b.) bukan bullet points
+4. Tulis dengan bahasa Indonesia yang formal dan jelas
+
+STRUKTUR RINGKASAN:
+- Identitas Perkara (nomor, jenis, para pihak)
+- Duduk Perkara (kronologi singkat)
+- Pertimbangan Hukum (poin-poin utama)
+- Amar Putusan (hasil keputusan)
+
+Kembalikan dalam format JSON:
+{"summary":"[ringkasan lengkap dalam plain text]","reasoning":"[alasan pembuatan ringkasan]","confidence":[0-1]}
+
 Teks sumber:
 {$content}
 PROMPT;

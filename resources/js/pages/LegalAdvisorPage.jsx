@@ -146,11 +146,14 @@ const LegalAdvisorPage = () => {
                                     className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
                                 >
                                     <option value="">Pilih perkara...</option>
-                                    {perkaras.map((perkara) => (
-                                        <option key={perkara.id} value={perkara.id}>
-                                            {perkara.nomor_perkara}
-                                        </option>
-                                    ))}
+                                    {perkaras.map((perkara) => {
+                                        const caseTypeLabel = CASE_TYPES.find(ct => ct.value === perkara.jenis_perkara)?.label || perkara.jenis_perkara;
+                                        return (
+                                            <option key={perkara.id} value={perkara.id}>
+                                                {perkara.nomor_perkara} - {caseTypeLabel}
+                                            </option>
+                                        );
+                                    })}
                                 </select>
                             </div>
 

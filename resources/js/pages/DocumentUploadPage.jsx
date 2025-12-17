@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { usePerkaras, useUploadDocument } from '@/api/hooks';
-import { DOCUMENT_TYPES } from '@/constants';
+import { DOCUMENT_TYPES, CASE_TYPES } from '@/constants';
 import {
     ArrowLeft, Upload, AlertCircle, Loader2, CheckCircle2,
     FileText, Tag, FileCode, MessageSquare, Zap, Cloud
@@ -42,6 +42,8 @@ const DocumentUploadPage = () => {
     const [success, setSuccess] = useState('');
     const [dragActive, setDragActive] = useState(false);
 
+    const isPdfFile = (f) => f && f.type === 'application/pdf';
+
     const handleDrag = (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -58,13 +60,27 @@ const DocumentUploadPage = () => {
         setDragActive(false);
 
         if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-            setFile(e.dataTransfer.files[0]);
+            const dropped = e.dataTransfer.files[0];
+            if (!isPdfFile(dropped)) {
+                setError('Hanya file PDF yang diizinkan.');
+                setFile(null);
+                return;
+            }
+            setError('');
+            setFile(dropped);
         }
     };
 
     const handleFileChange = (e) => {
         if (e.target.files?.[0]) {
-            setFile(e.target.files[0]);
+            const picked = e.target.files[0];
+            if (!isPdfFile(picked)) {
+                setError('Hanya file PDF yang diizinkan.');
+                setFile(null);
+                return;
+            }
+            setError('');
+            setFile(picked);
         }
     };
 
@@ -174,11 +190,14 @@ const DocumentUploadPage = () => {
                                         disabled={loadingCases || !hasCases}
                                     >
                                         <option value="">{hasCases ? '-- Pilih perkara --' : 'Memuat...'}</option>
-                                        {perkaraOptions.map((perkara) => (
-                                            <option key={perkara.id} value={perkara.id}>
-                                                {perkara.nomor_perkara}
-                                            </option>
-                                        ))}
+                                        {perkaraOptions.map((perkara) => {
+                                            const caseTypeLabel = CASE_TYPES.find(ct => ct.value === perkara.jenis_perkara)?.label || perkara.jenis_perkara;
+                                            return (
+                                                <option key={perkara.id} value={perkara.id}>
+                                                    {perkara.nomor_perkara} - {caseTypeLabel}
+                                                </option>
+                                            );
+                                        })}
                                     </select>
                                     {!loadingCases && !hasCases && (
                                         <p className="text-xs text-amber-600 font-medium">
@@ -210,7 +229,7 @@ const DocumentUploadPage = () => {
                                 <h2 className="text-lg font-bold text-slate-900">Upload File</h2>
                             </div>
 
-                            <FormField label="File Dokumen" required hint="Dukung format PDF dan gambar (JPG, PNG)">
+                            <FormField label="File Dokumen" required hint="Hanya mendukung file PDF">
                                 <div
                                     onDragEnter={handleDrag}
                                     onDragLeave={handleDrag}
@@ -224,7 +243,7 @@ const DocumentUploadPage = () => {
                                 >
                                     <input
                                         type="file"
-                                        accept="application/pdf,image/*"
+                                        accept="application/pdf"
                                         onChange={handleFileChange}
                                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                     />
@@ -236,7 +255,7 @@ const DocumentUploadPage = () => {
                                         <p className="text-lg font-semibold text-slate-900 mb-1">
                                             Seret file ke sini atau klik untuk memilih
                                         </p>
-                                        <p className="text-sm text-slate-600">PDF atau gambar hingga 50MB</p>
+                                        <p className="text-sm text-slate-600">PDF hingga 50MB</p>
                                     </div>
                                 </div>
 

@@ -36,7 +36,34 @@ class LegalReferenceService
             ->map(fn ($reg) => "{$reg->nama_undang} Pasal {$reg->pasal} : {$reg->isi_pasal}")
             ->implode("\n\n");
 
-        $prompt = "Teks putusan:\n{$text}\n\nDaftar regulasi kandidat:\n{$candidates}\n\nKembalikan JSON {\"articles\":[{\"nama\":...,\"pasal\":...,\"alasan\":...}]}";
+        $prompt = <<<PROMPT
+Anda adalah asisten hukum Pengadilan Agama. Tugas Anda adalah mengekstrak dan mengidentifikasi pasal-pasal hukum yang DISEBUTKAN atau DIRUJUK dalam teks putusan berikut.
+
+TEKS PUTUSAN:
+{$text}
+
+DAFTAR REGULASI REFERENSI:
+{$candidates}
+
+INSTRUKSI:
+1. EKSTRAK semua pasal, undang-undang, peraturan, atau regulasi yang DISEBUTKAN dalam teks putusan
+2. Cocokkan dengan daftar regulasi referensi jika ada kesamaan
+3. Jika ada pasal yang disebutkan dalam teks tapi tidak ada di daftar referensi, tetap sertakan
+4. Berikan alasan singkat mengapa pasal tersebut digunakan dalam putusan
+
+Cari pola seperti:
+- "Pasal XX Undang-Undang..."
+- "berdasarkan Pasal..."
+- "sebagaimana dimaksud dalam Pasal..."
+- "Kompilasi Hukum Islam Pasal..."
+- "PP Nomor... Pasal..."
+- "PERMA Nomor..."
+
+Kembalikan HANYA dalam format JSON (tanpa teks tambahan):
+{"articles":[{"nama":"Nama Undang-Undang/Peraturan","pasal":"Pasal XX","alasan":"Konteks penggunaan dalam putusan"}]}
+
+Jika benar-benar tidak ada pasal yang disebutkan dalam teks, kembalikan: {"articles":[]}
+PROMPT;
 
         $response = $this->gemini->legalReference($prompt);
         $articles = $this->extractArticles($response);
@@ -46,6 +73,15 @@ class LegalReferenceService
                 'perkara_id' => $perkara->id,
                 'document_id' => $document?->id,
                 'response_keys' => array_keys($response ?? []),
+                'response_sample' => array_map(function($v) {
+                    if (is_array($v)) {
+                        return 'array(' . count($v) . ' items)';
+                    }
+                    if (is_string($v) && strlen($v) > 100) {
+                        return substr($v, 0, 100) . '...';
+                    }
+                    return $v;
+                }, $response ?? []),
             ]);
             return;
         }
@@ -67,18 +103,86 @@ class LegalReferenceService
             return [];
         }
 
-        if (! empty($response['articles']) && is_array($response['articles'])) {
-            return $response['articles'];
-        }
+        // Log untuk debugging
+        Log::debug('LegalReferenceService: extractArticles response', [
+            'response' => $response,
+        ]);
 
-        if (isset($response['summary']) && is_string($response['summary'])) {
-            $decoded = json_decode($response['summary'], true);
-
-            if (json_last_error() === JSON_ERROR_NONE && ! empty($decoded['articles'])) {
-                return $decoded['articles'];
+        // Cek jika articles adalah array yang valid
+        if (isset($response['articles'])) {
+            $articles = $response['articles'];
+            
+            // Jika articles adalah string, coba decode sebagai JSON
+            if (is_string($articles)) {
+                $decoded = json_decode($articles, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                    return $decoded;
+                }
+            }
+            
+            // Jika articles adalah array dan tidak kosong
+            if (is_array($articles) && !empty($articles)) {
+                return $articles;
             }
         }
 
+        // Cek alternatif keys yang mungkin digunakan Gemini
+        $alternativeKeys = ['pasal', 'daftar_pasal', 'regulations', 'daftar', 'hasil', 'result', 'data'];
+        foreach ($alternativeKeys as $key) {
+            if (isset($response[$key]) && is_array($response[$key]) && !empty($response[$key])) {
+                return $response[$key];
+            }
+        }
+
+        // Cek jika response adalah nested structure
+        if (isset($response['summary']) && is_string($response['summary'])) {
+            $decoded = json_decode($response['summary'], true);
+
+            if (json_last_error() === JSON_ERROR_NONE) {
+                if (!empty($decoded['articles'])) {
+                    return $decoded['articles'];
+                }
+                // Cek alternatif keys di dalam summary
+                foreach ($alternativeKeys as $key) {
+                    if (isset($decoded[$key]) && is_array($decoded[$key]) && !empty($decoded[$key])) {
+                        return $decoded[$key];
+                    }
+                }
+            }
+        }
+
+        // Cek jika response langsung berisi array of articles (tanpa wrapper)
+        if ($this->isArticleArray($response)) {
+            return $response;
+        }
+
         return [];
+    }
+
+    /**
+     * Cek apakah array adalah daftar pasal langsung
+     */
+    protected function isArticleArray(array $data): bool
+    {
+        // Cek apakah ini indexed array (bukan associative)
+        if (array_keys($data) !== range(0, count($data) - 1)) {
+            return false;
+        }
+
+        // Cek item pertama apakah memiliki struktur pasal
+        $first = $data[0] ?? null;
+        if (!is_array($first)) {
+            return false;
+        }
+
+        // Pasal harus memiliki minimal salah satu dari keys ini
+        $requiredKeys = ['nama', 'pasal', 'nama_undang', 'isi_pasal', 'alasan'];
+        foreach ($requiredKeys as $key) {
+            if (isset($first[$key])) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

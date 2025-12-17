@@ -44,6 +44,20 @@ export const useDocument = (documentId) =>
         enabled: Boolean(documentId),
         queryKey: ['document', documentId],
         queryFn: () => withFallback(apiClient.get(`/documents/${documentId}`), mockDocuments[0]),
+        staleTime: 0, // Selalu fetch data terbaru
+        refetchOnMount: true, // Refetch saat component mount
+        refetchOnWindowFocus: true, // Refetch saat window focus
+        refetchInterval: (data) => {
+            // Auto-refresh jika dokumen masih dalam proses
+            // Cek jika OCR belum selesai (teks_ocr kosong)
+            // atau summary belum ada, atau recommendations belum ada
+            const hasNoOcr = !data?.teks_ocr;
+            const hasNoSummaries = !data?.summaries || data.summaries.length === 0;
+            const hasNoRecommendations = !data?.recommendations || data.recommendations.length === 0;
+            
+            // Refresh setiap 5 detik jika masih ada yang processing
+            return (hasNoOcr || hasNoSummaries || hasNoRecommendations) ? 5000 : false;
+        },
     });
 
 export const useCreatePerkara = () => {
@@ -201,4 +215,30 @@ export const useLegalRecommendationsForCase = (perkaraId) =>
         enabled: Boolean(perkaraId),
         queryKey: ['legal-recommendations', perkaraId],
         queryFn: () => apiClient.get(`/legal-advisor/perkara/${perkaraId}`).then(unwrapData),
+    });
+
+// Advanced Search (panitera)
+export const useAdvancedSearch = (params = undefined) =>
+    useQuery({
+        queryKey: ['advanced-search', serializeParams(params)],
+        queryFn: () => apiClient.get('/search', { params }).then(unwrapData),
+    });
+
+export const useSearchSuggestions = (term) =>
+    useQuery({
+        enabled: term !== undefined,
+        queryKey: ['search-suggestions', term ?? ''],
+        queryFn: () => apiClient.get('/search/suggestions', { params: { term } }).then(unwrapData),
+    });
+
+export const useSearchHistory = () =>
+    useQuery({
+        queryKey: ['search-history'],
+        queryFn: () => apiClient.get('/search/history').then(unwrapData),
+    });
+
+export const useSearchFilterOptions = () =>
+    useQuery({
+        queryKey: ['search-filter-options'],
+        queryFn: () => apiClient.get('/search/filter-options').then(unwrapData),
     });

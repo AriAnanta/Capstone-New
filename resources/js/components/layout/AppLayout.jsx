@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Outlet, NavLink, useLocation } from 'react-router-dom';
+import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { 
     FileText, LayoutDashboard, LogOut, Settings, Users, Scale, 
-    UploadCloud, Menu, X, ChevronDown, Zap, Bell, Search, BookOpen
+    UploadCloud, Menu, X, ChevronDown, Zap, BookOpen, Search, ScanText
 } from 'lucide-react';
 import { logout as logoutRequest } from '@/api/auth';
 import { useAuthStore } from '@/store/authStore';
@@ -13,6 +13,8 @@ const navItems = [
     { to: '/cases', label: 'Perkara', icon: Scale, roles: ['panitera', 'hakim'] },
     { to: '/documents', label: 'Dokumen', icon: FileText, roles: ['panitera', 'hakim'] },
     { to: '/legal-advisor', label: 'Asisten Hukum', icon: BookOpen, roles: ['hakim'] },
+    { to: '/search', label: 'Pencarian', icon: Search, roles: ['panitera'] },
+    { to: '/ocr-only', label: 'OCR Dokumen', icon: ScanText, roles: ['panitera'] },
     { to: '/documents/upload', label: 'Unggah Dokumen', icon: UploadCloud, roles: ['panitera'] },
     { to: '/settings', label: 'Pengaturan', icon: Settings, roles: ['panitera'] },
 ];
@@ -60,11 +62,11 @@ const Sidebar = ({ open, setOpen }) => {
                             <X className="h-5 w-5 text-slate-300" />
                         </button>
                     </div>
-                    <p className="text-xs text-slate-400">Pengadilan Tinggi Agama Bandung</p>
+                    <p className="text-xs text-slate-400">Pengadilan Tinggi Agama Kota Bandung</p>
                 </div>
 
                 {/* User Profile */}
-                <div className="border-b border-slate-700/50 px-6 py-4">
+                {/* <div className="border-b border-slate-700/50 px-6 py-4">
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-700/40 border border-slate-600/50 hover:border-emerald-500/30 transition-all">
                         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-linear-to-br from-emerald-400 to-teal-500 shadow-lg font-bold text-white text-sm">
                             {user?.name?.charAt(0)?.toUpperCase() ?? 'U'}
@@ -74,7 +76,7 @@ const Sidebar = ({ open, setOpen }) => {
                             <p className="text-xs text-emerald-300 capitalize font-medium">{role ?? 'user'}</p>
                         </div>
                     </div>
-                </div>
+                </div> */}
 
                 {/* Navigation */}
                 <nav className="flex-1 space-y-1 p-4 overflow-y-auto">
@@ -124,6 +126,7 @@ const Header = ({ sidebarOpen, setSidebarOpen }) => {
     const user = useAuthStore((state) => state.user);
     const logoutStore = useAuthStore((state) => state.logout);
     const [signingOut, setSigningOut] = useState(false);
+    const navigate = useNavigate();
 
     const handleLogout = async () => {
         setSigningOut(true);
@@ -162,26 +165,20 @@ const Header = ({ sidebarOpen, setSidebarOpen }) => {
                 {/* Right Section */}
                 <div className="flex items-center gap-2 sm:gap-4 ml-auto">
                     {/* Search Bar - Hidden on Mobile */}
-                    <div className="hidden lg:flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 border border-slate-200">
+                    {/* <div className="hidden lg:flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 border border-slate-200">
                         <Search className="h-4 w-4 text-slate-400" />
                         <input
                             type="text"
                             placeholder="Cari..."
                             className="bg-transparent text-sm text-slate-700 placeholder:text-slate-400 outline-none"
                         />
-                    </div>
+                    </div> */}
 
                     {/* Status Badge */}
                     <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-linear-to-r from-emerald-100 to-teal-100 border border-emerald-200 shadow-sm">
                         <Zap className="h-3 w-3 text-emerald-600" />
                         <span className="text-xs font-bold text-emerald-700 capitalize">{role ?? 'User'}</span>
                     </div>
-
-                    {/* Notifications */}
-                    <button className="hidden sm:flex p-2 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors relative">
-                        <Bell className="h-5 w-5" />
-                        <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500"></span>
-                    </button>
 
                     {/* User Menu */}
                     <div className="relative">
@@ -211,6 +208,10 @@ const Header = ({ sidebarOpen, setSidebarOpen }) => {
 
                                 {/* Menu Items */}
                                 <button
+                                    onClick={() => {
+                                        setUserMenuOpen(false);
+                                        navigate('/account/settings');
+                                    }}
                                     className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-100 transition-colors"
                                 >
                                     <Settings className="h-4 w-4" />

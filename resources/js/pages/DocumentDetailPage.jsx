@@ -14,6 +14,78 @@ const SUMMARY_TYPES = [
     { value: 'publik', label: 'Publik (Portal Web)' },
 ];
 
+/**
+ * Membersihkan format Markdown dan mengkonversi ke plain text yang rapi
+ */
+const cleanMarkdownText = (text) => {
+    if (!text) return '';
+    
+    let cleaned = text
+        // Hapus bold markdown
+        .replace(/\*\*([^*]+)\*\*/g, '$1')
+        .replace(/__([^_]+)__/g, '$1')
+        // Hapus italic markdown
+        .replace(/\*([^*]+)\*/g, '$1')
+        .replace(/_([^_]+)_/g, '$1')
+        // Hapus headers markdown
+        .replace(/^#{1,6}\s+/gm, '')
+        // Hapus bullet points dan ganti dengan dash
+        .replace(/^\s*[\*\-\+]\s+/gm, '- ')
+        // Hapus blockquote
+        .replace(/^>\s+/gm, '')
+        // Hapus code blocks
+        .replace(/```[\s\S]*?```/g, '')
+        .replace(/`([^`]+)`/g, '$1')
+        // Hapus horizontal rules
+        .replace(/^[-*_]{3,}$/gm, '')
+        // Hapus links markdown tapi pertahankan teks
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+        // Normalisasi multiple newlines
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+    
+    return cleaned;
+};
+
+/**
+ * Komponen untuk menampilkan teks yang sudah dibersihkan dengan formatting yang benar
+ */
+const FormattedText = ({ text, className = '' }) => {
+    const cleanedText = cleanMarkdownText(text);
+    
+    // Split berdasarkan double newline untuk paragraf
+    const paragraphs = cleanedText.split(/\n\n+/).filter(p => p.trim());
+    
+    return (
+        <div className={`space-y-3 ${className}`}>
+            {paragraphs.map((paragraph, index) => {
+                // Cek apakah paragraf ini adalah list
+                const lines = paragraph.split('\n');
+                const isAllList = lines.every(line => /^[-\d]+[.)\s]/.test(line.trim()) || !line.trim());
+                
+                if (isAllList && lines.length > 1) {
+                    return (
+                        <ul key={index} className="space-y-1 ml-4">
+                            {lines.filter(l => l.trim()).map((line, i) => (
+                                <li key={i} className="text-slate-700 text-sm leading-relaxed">
+                                    {line.replace(/^[-\d]+[.)\s]+/, '').trim()}
+                                </li>
+                            ))}
+                        </ul>
+                    );
+                }
+                
+                // Render sebagai paragraf dengan line breaks
+                return (
+                    <p key={index} className="text-slate-700 text-sm leading-relaxed whitespace-pre-line">
+                        {paragraph}
+                    </p>
+                );
+            })}
+        </div>
+    );
+};
+
 const DetailRow = ({ label, value }) => (
     <div className="py-3 border-b border-slate-100 last:border-0">
         <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</dt>
@@ -38,7 +110,45 @@ const DocumentDetailPage = () => {
     // ... (Handlers tetap sama, hanya styling yang berubah) ...
     const handleManualSummary = (e) => { e.preventDefault(); if(!summaryText.trim()) return; manualSummary.mutate({ tipe_ringkasan: summaryType, ringkasan: summaryText }, { onSuccess: () => setSummaryText('') }); };
     const handleReprocess = () => { if(canManageSummaries) reprocessDocument.mutate(); };
-    const handleDownload = async () => { /* ... logic download ... */ }; // Gunakan logic lama
+    const handleDownload = async () => {
+        if (!canDownloadOutputs || !document?.id) return;
+        
+        try {
+            setDownloading(true);
+            const response = await apiClient.get(`/documents/${document.id}/download`, {
+                responseType: 'blob',
+            });
+
+            // Buat blob dari response
+            const blob = new Blob([response.data], { 
+                type: response.headers['content-type'] || 'application/pdf' 
+            });
+            
+            // Buat URL untuk blob
+            const downloadUrl = window.URL.createObjectURL(blob);
+            
+            // Buat element anchor untuk trigger download
+            const anchor = window.document.createElement('a');
+            anchor.href = downloadUrl;
+            
+            // Tentukan ekstensi file
+            const fileExt = document.format_file?.includes('pdf') ? 'pdf' : 'bin';
+            anchor.download = `dokumen-${document.id}.${fileExt}`;
+            
+            // Append ke body, klik, lalu hapus
+            window.document.body.appendChild(anchor);
+            anchor.click();
+            window.document.body.removeChild(anchor);
+            
+            // Bersihkan URL object
+            window.URL.revokeObjectURL(downloadUrl);
+        } catch (error) {
+            console.error('Gagal mengunduh dokumen:', error);
+            alert('Gagal mengunduh dokumen. Silakan coba lagi.');
+        } finally {
+            setDownloading(false);
+        }
+    };
     const handlePrint = () => { if(canDownloadOutputs) window.print(); };
     
     const handleCopyOcr = async () => {
@@ -96,7 +206,16 @@ const DocumentDetailPage = () => {
                 <div className="space-y-6">
                     {/* Pipeline Status Card */}
                     <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-4">Status Pemrosesan</h3>
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">Status Pemrosesan</h3>
+                            {/* Auto-refresh indicator */}
+                            {(!document.teks_ocr || !document.summaries?.length || !document.recommendations?.length) && (
+                                <div className="flex items-center gap-2 text-xs text-blue-600">
+                                    <RefreshCw className="h-3 w-3 animate-spin" />
+                                    <span>Auto-refresh setiap 5 detik</span>
+                                </div>
+                            )}
+                        </div>
                         <div className="space-y-4">
                             {pipelineSteps.map((step, idx) => (
                                 <div key={step.key} className="flex items-center gap-3">
@@ -105,8 +224,11 @@ const DocumentDetailPage = () => {
                                     </div>
                                     <div className="flex-1">
                                         <p className={`text-sm font-medium ${step.done ? 'text-slate-900' : 'text-slate-500'}`}>{step.label}</p>
+                                        {!step.done && (
+                                            <p className="text-xs text-slate-400 mt-0.5">Sedang diproses...</p>
+                                        )}
                                     </div>
-                                    {step.done ? <CheckCircle2 className="h-5 w-5 text-emerald-500" /> : <Circle className="h-5 w-5 text-slate-300" />}
+                                    {step.done ? <CheckCircle2 className="h-5 w-5 text-emerald-500" /> : <Circle className="h-5 w-5 text-slate-300 animate-pulse" />}
                                 </div>
                             ))}
                         </div>
@@ -147,7 +269,7 @@ const DocumentDetailPage = () => {
                                             </span>
                                             <span className="text-xs text-slate-400">{formatDate(summary.created_at)}</span>
                                         </div>
-                                        <p className="text-slate-700 text-sm leading-relaxed">{summary.ringkasan}</p>
+                                        <FormattedText text={summary.ringkasan} />
                                     </div>
                                 ))}
                                 {(!document.summaries?.length) && <p className="text-slate-400 text-sm italic">Belum ada ringkasan.</p>}

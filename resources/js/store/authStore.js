@@ -12,6 +12,11 @@ export const useAuthStore = create(
                     user,
                     role: user?.role ?? null,
                 }),
+            setUser: (user) => 
+                set((state) => ({
+                    user,
+                    role: user?.role ?? state.role,
+                })),
             logout: () => set({ token: null, role: null, user: null }),
         }),
         {

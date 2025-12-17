@@ -13,6 +13,8 @@ import LoginPage from '@/pages/LoginPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 import SettingsPage from '@/pages/SettingsPage';
 import LegalAdvisorPage from '@/pages/LegalAdvisorPage';
+import AdvancedSearchPage from '@/pages/AdvancedSearchPage';
+import OcrOnlyPage from '@/pages/OcrOnlyPage';
 import { useAuthStore } from '@/store/authStore';
 
 const ProtectedRoute = ({ allowed, redirectTo = '/public/putusan' }) => {
@@ -44,6 +46,7 @@ export const AppRouter = () => (
                     <Route path="documents" element={<DocumentsPage />} />
                     <Route path="documents/:documentId" element={<DocumentDetailPage />} />
                     <Route path="settings" element={<SettingsPage />} />
+                    <Route path="account/settings" element={<SettingsPage />} />
 
                     {/* Hakim only routes */}
                     <Route element={<ProtectedRoute allowed={['hakim']} />}>
@@ -51,6 +54,8 @@ export const AppRouter = () => (
                     </Route>
 
                     <Route element={<ProtectedRoute allowed={['panitera']} />}>
+                        <Route path="search" element={<AdvancedSearchPage />} />
+                        <Route path="ocr-only" element={<OcrOnlyPage />} />
                         <Route path="cases/new" element={<CaseCreatePage />} />
                         <Route path="cases/:caseId/edit" element={<CaseEditPage />} />
                         <Route path="documents/upload" element={<DocumentUploadPage />} />
