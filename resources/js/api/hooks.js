@@ -55,8 +55,8 @@ export const useDocument = (documentId) =>
             const hasNoSummaries = !data?.summaries || data.summaries.length === 0;
             const hasNoRecommendations = !data?.recommendations || data.recommendations.length === 0;
             
-            // Refresh setiap 5 detik jika masih ada yang processing
-            return (hasNoOcr || hasNoSummaries || hasNoRecommendations) ? 5000 : false;
+            // Refresh setiap 3 detik jika masih ada yang processing
+            return (hasNoOcr || hasNoSummaries || hasNoRecommendations) ? 3000 : false;
         },
     });
 

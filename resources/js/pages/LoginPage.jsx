@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Scale, Shield, Eye, EyeOff, ArrowRight, Loader2, CheckCircle2 } from 'lucide-react';
+import { Scale, Shield, Eye, EyeOff, ArrowRight, Loader2, CheckCircle2, Globe } from 'lucide-react';
 import { login as loginRequest } from '@/api/auth';
 import { useAuthStore } from '@/store/authStore';
 
@@ -180,6 +180,26 @@ const LoginPage = () => {
                                             <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
                                         </>
                                     )}
+                                </button>
+
+                                {/* Public Portal Button */}
+                                <div className="relative">
+                                    <div className="absolute inset-0 flex items-center">
+                                        <div className="w-full border-t border-slate-700/50"></div>
+                                    </div>
+                                    <div className="relative flex justify-center text-xs">
+                                        <span className="px-3 bg-slate-950 text-slate-500">atau</span>
+                                    </div>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() => navigate('/public/putusan')}
+                                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 px-6 py-3.5 text-sm font-semibold text-slate-200 hover:bg-slate-700/40 hover:border-emerald-500/50 hover:text-white transition-all duration-300 group"
+                                >
+                                    <Globe className="h-5 w-5 text-emerald-400 group-hover:scale-110 transition-transform" />
+                                    <span>Akses Portal Publik</span>
+                                    <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform duration-300" />
                                 </button>
                             </form>
 

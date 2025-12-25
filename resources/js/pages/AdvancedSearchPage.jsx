@@ -12,27 +12,22 @@ const highlight = (text, term) => {
     const lower = value.toLowerCase();
     const needle = q.toLowerCase();
 
-    const parts = [];
+    let result = '';
     let idx = 0;
     while (idx < value.length) {
         const found = lower.indexOf(needle, idx);
         if (found === -1) {
-            parts.push(value.slice(idx));
+            result += value.slice(idx);
             break;
         }
-        if (found > idx) parts.push(value.slice(idx, found));
-        parts.push(
-            <mark
-                key={`${found}-${needle}`}
-                className="rounded bg-emerald-100 px-1 text-emerald-900"
-            >
-                {value.slice(found, found + q.length)}
-            </mark>
-        );
+        if (found > idx) {
+            result += value.slice(idx, found);
+        }
+        result += `<mark class="rounded bg-emerald-100 px-1 text-emerald-900">${value.slice(found, found + q.length)}</mark>`;
         idx = found + q.length;
     }
 
-    return parts;
+    return result;
 };
 
 const Field = ({ label, children }) => (
@@ -51,6 +46,7 @@ export default function AdvancedSearchPage() {
     const [filters, setFilters] = useState({
         jenis_perkara: '',
         jenis_dokumen: '',
+        kategori_ocr: '',
     });
 
     // Voice recognition states
@@ -192,6 +188,7 @@ export default function AdvancedSearchPage() {
             q: q.trim() || undefined,
             jenis_perkara: filters.jenis_perkara || undefined,
             jenis_dokumen: filters.jenis_dokumen || undefined,
+            kategori_ocr: filters.kategori_ocr || undefined,
             per_page: perPage,
             page,
         };
@@ -216,34 +213,35 @@ export default function AdvancedSearchPage() {
         CASE_TYPES.find((t) => t.value === value)?.label ?? value;
 
     return (
-        <div className="space-y-6">
+        <div className="min-h-screen bg-linear-to-br from-slate-50 via-indigo-50/30 to-purple-50/30 p-6">
             {/* Header Section */}
-            <div className="relative rounded-2xl bg-linear-to-br from-emerald-50 via-teal-50 to-cyan-50 border border-emerald-100 p-6 shadow-sm overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-linear-to-br from-emerald-200/20 to-teal-200/20 rounded-full blur-3xl"></div>
-                <div className="relative flex items-start justify-between gap-4">
-                    <div>
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/30">
-                                <Search className="h-5 w-5 text-white" />
-                            </div>
-                            <h2 className="text-2xl font-bold text-slate-900">Pencarian Dokumen</h2>
+            <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-indigo-600 via-purple-600 to-pink-600 p-8 shadow-2xl shadow-indigo-500/20 mb-8">
+                <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjEiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-30" />
+                <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 rounded-xl bg-white/20 backdrop-blur-sm shadow-lg">
+                            <Search className="h-8 w-8 text-white" />
                         </div>
-                        
+                        <div>
+                            <div className="mb-2 inline-block px-3 py-1 rounded-full bg-white/20 text-white border border-white/30 backdrop-blur-sm text-xs font-semibold uppercase tracking-wide">
+                                Pencarian Lanjutan
+                            </div>
+                            <h1 className="text-3xl font-bold text-white tracking-tight mb-1">Pencarian Dokumen & AI</h1>
+                            <p className="text-indigo-50 text-sm">Cari dengan kata kunci, filter, atau gunakan pencarian suara</p>
+                        </div>
                     </div>
                     <button
                         type="button"
                         onClick={() => setFiltersOpen((v) => !v)}
-                        className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all shadow-sm ${
-                            filtersOpen 
-                                ? 'bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-50' 
-                                : 'bg-emerald-600 text-white hover:bg-emerald-700'
-                        }`}
+                        className="bg-white text-indigo-700 hover:bg-indigo-50 shadow-xl shadow-black/10 border-0 font-semibold inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm transition-all"
                     >
                         <Filter className="h-4 w-4" />
                         {filtersOpen ? 'Sembunyikan Filter' : 'Tampilkan Filter'}
                     </button>
                 </div>
             </div>
+            
+            <div className="space-y-6">
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-4">
@@ -556,7 +554,7 @@ export default function AdvancedSearchPage() {
 
                                         <div className="shrink-0 flex flex-col gap-2">
                                             <Link
-                                                to={`/documents/${item.id}`}
+                                                to={item.perkara_id ? `/documents/${item.id}` : `/ocr-only#doc-${item.id}`}
                                                 className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-linear-to-r from-emerald-600 to-blue-600 text-white text-sm font-medium shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 hover:scale-105 transition-all duration-200"
                                             >
                                                 Lihat Detail
@@ -713,12 +711,46 @@ export default function AdvancedSearchPage() {
                                     </div>
                                 </Field>
 
+                                <Field label="Kategori OCR">
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                            <svg className="h-5 w-5 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
+                                            </svg>
+                                        </div>
+                                        <select
+                                            value={filters.kategori_ocr}
+                                            onChange={(e) =>
+                                                setFilters((p) => ({ ...p, kategori_ocr: e.target.value }))
+                                            }
+                                            className="w-full pl-10 pr-3 py-3 rounded-xl border-2 border-slate-200 text-sm bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all appearance-none cursor-pointer hover:border-slate-300"
+                                        >
+                                            <option value="">Semua Kategori OCR</option>
+                                            <option value="umum">Umum</option>
+                                            <option value="surat">Surat</option>
+                                            <option value="formulir">Formulir</option>
+                                            <option value="ktp">KTP/Identitas</option>
+                                            <option value="akta">Akta</option>
+                                            <option value="sertifikat">Sertifikat</option>
+                                            <option value="kontrak">Kontrak/Perjanjian</option>
+                                            <option value="nota">Nota/Kwitansi</option>
+                                            <option value="lainnya">Lainnya</option>
+                                        </select>
+                                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                            <svg className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </Field>
+
                                 <button
                                     type="button"
                                     onClick={() =>
                                         setFilters({
                                             jenis_perkara: '',
                                             jenis_dokumen: '',
+                                            kategori_ocr: '',
                                         })
                                     }
                                     className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-slate-300 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all duration-200"
@@ -732,7 +764,7 @@ export default function AdvancedSearchPage() {
                         </div>
                     )}
 
-                    <div className="rounded-2xl border-2 border-slate-200 bg-linear-to-br from-white to-slate-50 shadow-xl overflow-hidden">
+                    {/* <div className="rounded-2xl border-2 border-slate-200 bg-linear-to-br from-white to-slate-50 shadow-xl overflow-hidden">
                         <div className="bg-linear-to-r from-amber-600 to-orange-600 px-6 py-4">
                             <div className="flex items-center gap-3">
                                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
@@ -792,8 +824,9 @@ export default function AdvancedSearchPage() {
                             ))}
                         </div>
                         </div>
-                    </div>
+                    </div> */}
                 </div>
+            </div>
             </div>
         </div>
     );

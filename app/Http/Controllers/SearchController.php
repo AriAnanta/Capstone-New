@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Document;
+use App\Models\OcrDocument;
 use App\Models\Perkara;
 use App\Models\SearchHistory;
 use App\Models\Tag;
@@ -18,6 +19,8 @@ class SearchController extends Controller
             'q' => 'nullable|string|max:200',
             'jenis_perkara' => 'nullable|string|max:100',
             'jenis_dokumen' => 'nullable|string|max:100',
+            'kategori_ocr' => 'nullable|string|max:100', // Filter untuk OCR-only documents
+            'source' => 'nullable|string|in:all,documents,ocr_only', // Filter source: all, documents, atau ocr_only
             'per_page' => 'nullable|integer|min:1|max:50',
             'page' => 'nullable|integer|min:1',
         ]);
@@ -25,80 +28,134 @@ class SearchController extends Controller
         $term = trim((string) ($validated['q'] ?? ''));
         $driver = DB::connection()->getDriverName();
         $perPage = (int) ($validated['per_page'] ?? 15);
+        $source = $validated['source'] ?? 'all';
 
         // Escape special characters untuk LIKE query
         $escapedTerm = $this->escapeLikeValue($term);
 
-        $documentsQuery = Document::query()
-            ->with([
-                'perkara.creator:id,name,email,role',
-                'perkara.assignee:id,name,email,role',
-                'tags:id,name',
-                'summaries' => fn ($q) => $q->latest(),
-                'recommendations' => fn ($q) => $q->latest()->limit(1),
-            ])
-            ->when(!empty($validated['jenis_dokumen']), fn ($q) => $q->where('jenis_dokumen', $validated['jenis_dokumen']))
-            ->when(!empty($validated['jenis_perkara']), function ($q) use ($validated) {
-                $q->whereHas('perkara', fn ($p) => $p->where('jenis_perkara', $validated['jenis_perkara']));
-            })
-            ->when($term !== '', function ($q) use ($term, $escapedTerm, $driver) {
-                $q->where(function ($qq) use ($term, $escapedTerm, $driver) {
-                    $qq->where('teks_ocr', 'like', "%{$escapedTerm}%")
-                        ->orWhereHas('summaries', fn ($s) => $s->where('ringkasan', 'like', "%{$escapedTerm}%"))
-                        ->orWhereHas('tags', fn ($t) => $t->where('name', 'like', "%{$escapedTerm}%"))
-                        ->orWhereHas('perkara', fn ($p) => $p->where('nomor_perkara', 'like', "%{$escapedTerm}%"))
-                        ->orWhereHas('recommendations', function ($r) use ($term, $escapedTerm, $driver) {
-                            $r->where('pertimbangan_llm', 'like', "%{$escapedTerm}%");
+        $allResults = collect();
 
-                            if ($driver === 'mysql') {
-                                $r->orWhereRaw('JSON_SEARCH(daftar_pasal, "all", ?) IS NOT NULL', [$term]);
-                            }
-                        });
-                });
-            })
-            ->latest('tanggal_upload');
+        // Query Documents (jika source adalah 'all' atau 'documents')
+        if (in_array($source, ['all', 'documents'])) {
+            $documentsQuery = Document::query()
+                ->with([
+                    'perkara.creator:id,name,email,role',
+                    'perkara.assignee:id,name,email,role',
+                    'tags:id,name',
+                    'summaries' => fn ($q) => $q->latest(),
+                    'recommendations' => fn ($q) => $q->latest()->limit(1),
+                ])
+                ->when(!empty($validated['jenis_dokumen']), fn ($q) => $q->where('jenis_dokumen', $validated['jenis_dokumen']))
+                ->when(!empty($validated['jenis_perkara']), function ($q) use ($validated) {
+                    $q->whereHas('perkara', fn ($p) => $p->where('jenis_perkara', $validated['jenis_perkara']));
+                })
+                ->when($term !== '', function ($q) use ($term, $escapedTerm, $driver) {
+                    $q->where(function ($qq) use ($term, $escapedTerm, $driver) {
+                        $qq->where('teks_ocr', 'like', "%{$escapedTerm}%")
+                            ->orWhereHas('summaries', fn ($s) => $s->where('ringkasan', 'like', "%{$escapedTerm}%"))
+                            ->orWhereHas('tags', fn ($t) => $t->where('name', 'like', "%{$escapedTerm}%"))
+                            ->orWhereHas('perkara', fn ($p) => $p->where('nomor_perkara', 'like', "%{$escapedTerm}%"))
+                            ->orWhereHas('recommendations', function ($r) use ($term, $escapedTerm, $driver) {
+                                $r->where('pertimbangan_llm', 'like', "%{$escapedTerm}%");
 
-        $paginator = $documentsQuery->paginate($perPage);
+                                if ($driver === 'mysql') {
+                                    $r->orWhereRaw('JSON_SEARCH(daftar_pasal, "all", ?) IS NOT NULL', [$term]);
+                                }
+                            });
+                    });
+                })
+                ->latest('tanggal_upload')
+                ->get();
 
-        $items = $paginator->getCollection()->map(function (Document $doc) use ($term) {
-            // Ambil semua ringkasan (publik, internal, pertimbangan hukum)
-            $summaries = $doc->summaries;
-            $summaryPublik = $summaries->firstWhere('tipe_ringkasan', 'publik')?->ringkasan;
-            $summaryInternal = $summaries->firstWhere('tipe_ringkasan', 'internal')?->ringkasan;
-            $summaryLegal = $summaries->firstWhere('tipe_ringkasan', 'pertimbangan_hukum')?->ringkasan;
-            $recommendationText = optional($doc->recommendations->first())->pertimbangan_llm;
+            $allResults = $allResults->merge($documentsQuery);
+        }
 
-            $snippet = $this->buildSnippet([
-                'summary_publik' => $summaryPublik,
-                'summary_internal' => $summaryInternal,
-                'summary_legal' => $summaryLegal,
-                'recommendation' => $recommendationText,
-                'ocr' => $doc->teks_ocr,
-            ], $term);
+        // Query OcrDocuments (jika source adalah 'all' atau 'ocr_only')
+        if (in_array($source, ['all', 'ocr_only'])) {
+            $ocrQuery = OcrDocument::query()
+                ->with(['uploader:id,name,email,role'])
+                ->where('status_ocr', 'completed') // Hanya tampilkan yang sudah selesai OCR
+                ->when(!empty($validated['kategori_ocr']), fn ($q) => $q->where('kategori', $validated['kategori_ocr']))
+                ->when($term !== '', function ($q) use ($escapedTerm) {
+                    $q->where(function ($qq) use ($escapedTerm) {
+                        $qq->where('teks_ocr', 'like', "%{$escapedTerm}%")
+                            ->orWhere('nama_file', 'like', "%{$escapedTerm}%")
+                            ->orWhere('keterangan', 'like', "%{$escapedTerm}%");
+                    });
+                })
+                ->latest('tanggal_upload')
+                ->get();
 
-            return [
-                'id' => $doc->id,
-                'jenis_dokumen' => $doc->jenis_dokumen?->value ?? null,
-                'tanggal_upload' => optional($doc->tanggal_upload)->toISOString(),
-                'format_file' => $doc->format_file,
-                'perkara' => $doc->perkara ? [
-                    'id' => $doc->perkara->id,
-                    'nomor_perkara' => $doc->perkara->nomor_perkara,
-                    'jenis_perkara' => $doc->perkara->jenis_perkara?->value ?? null,
-                    'status' => $doc->perkara->status,
-                    'creator' => $doc->perkara->creator,
-                    'assignee' => $doc->perkara->assignee,
-                ] : null,
-                'tags' => $doc->tags?->map(fn ($t) => ['id' => $t->id, 'name' => $t->name])->values(),
-                'snippet' => $snippet,
-                // Kirim semua summaries untuk frontend bisa pilih
-                'summaries' => [
-                    'publik' => $summaryPublik,
-                    'internal' => $summaryInternal,
-                    'legal' => $summaryLegal,
-                ],
-                'ocr_text' => $doc->teks_ocr,
-            ];
+            $allResults = $allResults->merge($ocrQuery);
+        }
+
+        // Sort by tanggal_upload dan paginate manual
+        $allResults = $allResults->sortByDesc('tanggal_upload')->values();
+        $total = $allResults->count();
+        $currentPage = (int) ($validated['page'] ?? 1);
+        $offset = ($currentPage - 1) * $perPage;
+        $paginatedResults = $allResults->slice($offset, $perPage)->values();
+
+        $items = $paginatedResults->map(function ($item) use ($term) {
+            // Check if it's OcrDocument or Document
+            if ($item instanceof OcrDocument) {
+                // Map OcrDocument
+                $snippet = $this->buildSnippet([
+                    'ocr' => $item->teks_ocr,
+                ], $term);
+
+                return [
+                    'id' => $item->id,
+                    'source_type' => 'ocr_only', // Identifier untuk frontend
+                    'nama_file' => $item->nama_file,
+                    'kategori_ocr' => $item->kategori,
+                    'keterangan' => $item->keterangan,
+                    'tanggal_upload' => optional($item->tanggal_upload)->toISOString(),
+                    'format_file' => $item->format_file,
+                    'uploader' => $item->uploader,
+                    'snippet' => $snippet,
+                    'ocr_text' => $item->teks_ocr,
+                ];
+            } else {
+                // Map Document (existing logic)
+                $summaries = $item->summaries;
+                $summaryPublik = $summaries->firstWhere('tipe_ringkasan', 'publik')?->ringkasan;
+                $summaryInternal = $summaries->firstWhere('tipe_ringkasan', 'internal')?->ringkasan;
+                $summaryLegal = $summaries->firstWhere('tipe_ringkasan', 'pertimbangan_hukum')?->ringkasan;
+                $recommendationText = optional($item->recommendations->first())->pertimbangan_llm;
+
+                $snippet = $this->buildSnippet([
+                    'summary_publik' => $summaryPublik,
+                    'summary_internal' => $summaryInternal,
+                    'summary_legal' => $summaryLegal,
+                    'recommendation' => $recommendationText,
+                    'ocr' => $item->teks_ocr,
+                ], $term);
+
+                return [
+                    'id' => $item->id,
+                    'source_type' => 'document', // Identifier untuk frontend
+                    'jenis_dokumen' => $item->jenis_dokumen?->value ?? null,
+                    'tanggal_upload' => optional($item->tanggal_upload)->toISOString(),
+                    'format_file' => $item->format_file,
+                    'perkara' => $item->perkara ? [
+                        'id' => $item->perkara->id,
+                        'nomor_perkara' => $item->perkara->nomor_perkara,
+                        'jenis_perkara' => $item->perkara->jenis_perkara?->value ?? null,
+                        'status' => $item->perkara->status,
+                        'creator' => $item->perkara->creator,
+                        'assignee' => $item->perkara->assignee,
+                    ] : null,
+                    'tags' => $item->tags?->map(fn ($t) => ['id' => $t->id, 'name' => $t->name])->values(),
+                    'snippet' => $snippet,
+                    'summaries' => [
+                        'publik' => $summaryPublik,
+                        'internal' => $summaryInternal,
+                        'legal' => $summaryLegal,
+                    ],
+                    'ocr_text' => $item->teks_ocr,
+                ];
+            }
         })->values();
 
         $filtersForHistory = collect($validated)
@@ -111,7 +168,7 @@ class SearchController extends Controller
                 'user_id' => $request->user()->id,
                 'query' => $term !== '' ? $term : null,
                 'filters' => $filtersForHistory,
-                'results_count' => $paginator->total(),
+                'results_count' => $total,
             ]);
         }
 
@@ -119,10 +176,10 @@ class SearchController extends Controller
             'data' => [
                 'items' => $items,
                 'meta' => [
-                    'current_page' => $paginator->currentPage(),
-                    'last_page' => $paginator->lastPage(),
-                    'per_page' => $paginator->perPage(),
-                    'total' => $paginator->total(),
+                    'current_page' => $currentPage,
+                    'last_page' => (int) ceil($total / $perPage),
+                    'per_page' => $perPage,
+                    'total' => $total,
                 ],
             ],
         ]);
@@ -294,10 +351,21 @@ class SearchController extends Controller
             ->filter()
             ->values();
 
+        // Ambil distinct kategori dari OCR documents
+        $kategoriOcr = OcrDocument::query()
+            ->select('kategori')
+            ->distinct()
+            ->whereNotNull('kategori')
+            ->where('status_ocr', 'completed')
+            ->pluck('kategori')
+            ->filter()
+            ->values();
+
         return response()->json([
             'data' => [
                 'jenis_dokumen' => $jenisDocuments,
                 'jenis_perkara' => $jenisPerkaras,
+                'kategori_ocr' => $kategoriOcr,
             ],
         ]);
     }

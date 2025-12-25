@@ -1,13 +1,17 @@
-import { useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useMemo, useState, useEffect, useRef } from 'react';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useDocument, useManualSummary, useReprocessDocument } from '@/api/hooks';
 import { formatDate } from '@/utils/format';
 import { useAuthStore } from '@/store/authStore';
 import { apiClient } from '@/api/client';
 import { 
     FileText, Download, Printer, RefreshCw, Edit, ArrowLeft, 
-    CheckCircle2, Circle, BrainCircuit, Sparkles, Copy, Check 
+    CheckCircle2, Circle, BrainCircuit, Sparkles, Copy, Check, Activity 
 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import clsx from 'clsx';
 
 const SUMMARY_TYPES = [
     { value: 'internal', label: 'Internal (Hakim/Panitera)' },
@@ -19,55 +23,37 @@ const SUMMARY_TYPES = [
  */
 const cleanMarkdownText = (text) => {
     if (!text) return '';
-    
-    let cleaned = text
-        // Hapus bold markdown
+    return text
         .replace(/\*\*([^*]+)\*\*/g, '$1')
         .replace(/__([^_]+)__/g, '$1')
-        // Hapus italic markdown
         .replace(/\*([^*]+)\*/g, '$1')
         .replace(/_([^_]+)_/g, '$1')
-        // Hapus headers markdown
         .replace(/^#{1,6}\s+/gm, '')
-        // Hapus bullet points dan ganti dengan dash
         .replace(/^\s*[\*\-\+]\s+/gm, '- ')
-        // Hapus blockquote
         .replace(/^>\s+/gm, '')
-        // Hapus code blocks
         .replace(/```[\s\S]*?```/g, '')
         .replace(/`([^`]+)`/g, '$1')
-        // Hapus horizontal rules
         .replace(/^[-*_]{3,}$/gm, '')
-        // Hapus links markdown tapi pertahankan teks
         .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-        // Normalisasi multiple newlines
         .replace(/\n{3,}/g, '\n\n')
         .trim();
-    
-    return cleaned;
 };
 
-/**
- * Komponen untuk menampilkan teks yang sudah dibersihkan dengan formatting yang benar
- */
 const FormattedText = ({ text, className = '' }) => {
     const cleanedText = cleanMarkdownText(text);
-    
-    // Split berdasarkan double newline untuk paragraf
     const paragraphs = cleanedText.split(/\n\n+/).filter(p => p.trim());
     
     return (
-        <div className={`space-y-3 ${className}`}>
+        <div className={`space-y-4 ${className}`}>
             {paragraphs.map((paragraph, index) => {
-                // Cek apakah paragraf ini adalah list
                 const lines = paragraph.split('\n');
                 const isAllList = lines.every(line => /^[-\d]+[.)\s]/.test(line.trim()) || !line.trim());
                 
                 if (isAllList && lines.length > 1) {
                     return (
-                        <ul key={index} className="space-y-1 ml-4">
+                        <ul key={index} className="space-y-2 ml-4 list-disc marker:text-slate-400">
                             {lines.filter(l => l.trim()).map((line, i) => (
-                                <li key={i} className="text-slate-700 text-sm leading-relaxed">
+                                <li key={i} className="text-slate-700 text-sm leading-relaxed pl-1">
                                     {line.replace(/^[-\d]+[.)\s]+/, '').trim()}
                                 </li>
                             ))}
@@ -75,9 +61,8 @@ const FormattedText = ({ text, className = '' }) => {
                     );
                 }
                 
-                // Render sebagai paragraf dengan line breaks
                 return (
-                    <p key={index} className="text-slate-700 text-sm leading-relaxed whitespace-pre-line">
+                    <p key={index} className="text-slate-700 text-sm leading-relaxed whitespace-pre-line text-justify">
                         {paragraph}
                     </p>
                 );
@@ -87,14 +72,16 @@ const FormattedText = ({ text, className = '' }) => {
 };
 
 const DetailRow = ({ label, value }) => (
-    <div className="py-3 border-b border-slate-100 last:border-0">
+    <div className="py-3 border-b border-slate-100 last:border-0 flex justify-between items-center group hover:bg-slate-50/50 px-2 rounded-lg transition-colors -mx-2">
         <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</dt>
-        <dd className="mt-1 text-sm font-semibold text-slate-900">{value || '-'}</dd>
+        <dd className="text-sm font-semibold text-slate-900 text-right max-w-[60%] truncate">{value || '-'}</dd>
     </div>
 );
 
 const DocumentDetailPage = () => {
     const { documentId } = useParams();
+    const [searchParams] = useSearchParams();
+    const pageRef = useRef(null);
     const { data: document, isLoading } = useDocument(documentId);
     const manualSummary = useManualSummary(documentId);
     const reprocessDocument = useReprocessDocument(documentId);
@@ -103,44 +90,42 @@ const DocumentDetailPage = () => {
     const [summaryText, setSummaryText] = useState('');
     const [copied, setCopied] = useState(false);
     const [downloading, setDownloading] = useState(false);
+    const [highlightEffect, setHighlightEffect] = useState(false);
 
     const canManageSummaries = role === 'panitera';
     const canDownloadOutputs = role === 'hakim';
+    const fromSearch = searchParams.get('from') === 'search';
+    
+    useEffect(() => {
+        if (fromSearch && document) {
+            setHighlightEffect(true);
+            setTimeout(() => setHighlightEffect(false), 3000);
+            pageRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, [fromSearch, document]);
 
-    // ... (Handlers tetap sama, hanya styling yang berubah) ...
-    const handleManualSummary = (e) => { e.preventDefault(); if(!summaryText.trim()) return; manualSummary.mutate({ tipe_ringkasan: summaryType, ringkasan: summaryText }, { onSuccess: () => setSummaryText('') }); };
+    const handleManualSummary = (e) => { 
+        e.preventDefault(); 
+        if(!summaryText.trim()) return; 
+        manualSummary.mutate({ tipe_ringkasan: summaryType, ringkasan: summaryText }, { onSuccess: () => setSummaryText('') }); 
+    };
+
     const handleReprocess = () => { if(canManageSummaries) reprocessDocument.mutate(); };
+    
     const handleDownload = async () => {
         if (!canDownloadOutputs || !document?.id) return;
-        
         try {
             setDownloading(true);
-            const response = await apiClient.get(`/documents/${document.id}/download`, {
-                responseType: 'blob',
-            });
-
-            // Buat blob dari response
-            const blob = new Blob([response.data], { 
-                type: response.headers['content-type'] || 'application/pdf' 
-            });
-            
-            // Buat URL untuk blob
+            const response = await apiClient.get(`/documents/${document.id}/download`, { responseType: 'blob' });
+            const blob = new Blob([response.data], { type: response.headers['content-type'] || 'application/pdf' });
             const downloadUrl = window.URL.createObjectURL(blob);
-            
-            // Buat element anchor untuk trigger download
             const anchor = window.document.createElement('a');
             anchor.href = downloadUrl;
-            
-            // Tentukan ekstensi file
             const fileExt = document.format_file?.includes('pdf') ? 'pdf' : 'bin';
             anchor.download = `dokumen-${document.id}.${fileExt}`;
-            
-            // Append ke body, klik, lalu hapus
             window.document.body.appendChild(anchor);
             anchor.click();
             window.document.body.removeChild(anchor);
-            
-            // Bersihkan URL object
             window.URL.revokeObjectURL(downloadUrl);
         } catch (error) {
             console.error('Gagal mengunduh dokumen:', error);
@@ -149,7 +134,6 @@ const DocumentDetailPage = () => {
             setDownloading(false);
         }
     };
-    const handlePrint = () => { if(canDownloadOutputs) window.print(); };
     
     const handleCopyOcr = async () => {
         if (!document?.teks_ocr) return;
@@ -164,207 +148,297 @@ const DocumentDetailPage = () => {
         { key: 'gemini', label: 'Analisis Hukum', icon: Sparkles, done: Boolean(document?.recommendations?.length) },
     ], [document]);
 
-    if (isLoading) return <div className="flex h-screen items-center justify-center"><RefreshCw className="animate-spin text-emerald-600 h-8 w-8" /></div>;
+    if (isLoading) return (
+        <div className="flex bg-slate-50 min-h-screen items-center justify-center">
+            <RefreshCw className="animate-spin text-emerald-600 h-8 w-8" />
+        </div>
+    );
+    
     if (!document) return <div className="p-8 text-center">Dokumen tidak ditemukan</div>;
 
     return (
-        <div className="min-h-screen bg-slate-50/50 pb-20">
-            {/* Header Navigation */}
-            <div className="bg-white border-b border-slate-200 px-4 py-4 sm:px-8 sticky top-0 z-30">
-                <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                        <Link to="/documents" className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors">
-                            <ArrowLeft className="h-5 w-5" />
-                        </Link>
-                        <div>
-                            <h1 className="text-xl font-bold text-slate-900">Detail Dokumen #{document.id}</h1>
-                            <div className="flex items-center gap-2 text-sm text-slate-500">
-                                <span className="px-2 py-0.5 rounded bg-slate-100 text-xs font-medium uppercase">{document.jenis_dokumen}</span>
-                                <span>•</span>
-                                <span>Diunggah {formatDate(document.tanggal_upload)}</span>
+        <div ref={pageRef} className="min-h-screen bg-liear-to-br from-slate-50 via-blue-50/30 to-purple-50/30">
+            <div className={clsx("space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700", highlightEffect && "ring-4 ring-yellow-400/50 rounded-xl transition-all duration-500")}>
+                {/* Highlight banner when coming from search */}
+                {fromSearch && (
+                    <div className={clsx(
+                        "bg-linear-to-r from-yellow-400 via-amber-400 to-orange-400 text-white px-6 py-3 text-center font-bold rounded-xl shadow-xl shadow-yellow-500/20 transition-all duration-500",
+                        highlightEffect ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 hidden'
+                    )}>
+                        ✨ Dokumen ditemukan dari hasil pencarian
+                    </div>
+                )}
+
+                {/* Header Navigation */}
+                <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-blue-600 via-indigo-600 to-purple-600 p-8 shadow-2xl shadow-blue-500/20">
+                    <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjEiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-30" />
+                    <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+                        <div className="flex items-center gap-4">
+                            <Button variant="outline" size="icon" onClick={() => window.history.back()} className="shrink-0 bg-white/90 hover:bg-white border-white/50 backdrop-blur-sm shadow-lg">
+                                <ArrowLeft className="h-5 w-5 text-slate-700" />
+                            </Button>
+                            <div>
+                                <Badge className="mb-2 bg-white/20 text-white border-white/30 backdrop-blur-sm">
+                                    <FileText className="h-3 w-3 mr-1.5" />
+                                    {document.jenis_dokumen.toUpperCase()}
+                                </Badge>
+                                <h1 className="text-3xl font-bold text-white tracking-tight mb-1">Detail Dokumen #{document.id}</h1>
+                                <p className="text-blue-50 text-sm">Diunggah {formatDate(document.tanggal_upload)}</p>
                             </div>
                         </div>
-                    </div>
-                    <div className="flex gap-2">
-                        {canDownloadOutputs && (
-                            <button onClick={handleDownload} disabled={downloading} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 shadow-sm">
-                                <Download className="h-4 w-4" /> Unduh
-                            </button>
-                        )}
-                        {canManageSummaries && (
-                            <button onClick={handleReprocess} disabled={reprocessDocument.isPending} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 shadow-sm">
-                                <RefreshCw className={`h-4 w-4 ${reprocessDocument.isPending ? 'animate-spin' : ''}`} /> Proses Ulang
-                            </button>
-                        )}
+                        <div className="flex gap-3">
+                            {canDownloadOutputs && (
+                                <Button variant="outline" onClick={handleDownload} disabled={downloading} className="bg-white/90 hover:bg-white border-white/50 text-slate-700 shadow-lg backdrop-blur-sm">
+                                    <Download className="mr-2 h-4 w-4" /> Unduh
+                                </Button>
+                            )}
+                            {canManageSummaries && (
+                                <Button onClick={handleReprocess} disabled={reprocessDocument.isPending} className="bg-white text-blue-700 hover:bg-blue-50 shadow-xl shadow-black/10 border-0 font-semibold">
+                                    <RefreshCw className={clsx("mr-2 h-4 w-4", reprocessDocument.isPending && "animate-spin")} /> 
+                                    Proses Ulang
+                                </Button>
+                            )}
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8 grid lg:grid-cols-3 gap-8">
-                
+            <div className="grid lg:grid-cols-3 gap-8">
                 {/* Left Column: Metadata & Pipeline */}
                 <div className="space-y-6">
                     {/* Pipeline Status Card */}
-                    <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">Status Pemrosesan</h3>
-                            {/* Auto-refresh indicator */}
-                            {(!document.teks_ocr || !document.summaries?.length || !document.recommendations?.length) && (
-                                <div className="flex items-center gap-2 text-xs text-blue-600">
-                                    <RefreshCw className="h-3 w-3 animate-spin" />
-                                    <span>Auto-refresh setiap 5 detik</span>
+                    <Card className="border-slate-200/60 shadow-xl shadow-slate-200/50 bg-white overflow-hidden">
+                        <CardHeader className="bg-linear-to-r from-slate-50 to-blue-50/50 border-b border-slate-100 pb-4">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
+                                        <Activity className="h-4 w-4" />
+                                    </div>
+                                    <CardTitle className="text-base font-bold text-slate-900">Status Pemrosesan</CardTitle>
                                 </div>
-                            )}
-                        </div>
-                        <div className="space-y-4">
-                            {pipelineSteps.map((step, idx) => (
-                                <div key={step.key} className="flex items-center gap-3">
-                                    <div className={`flex h-8 w-8 items-center justify-center rounded-full border ${step.done ? 'bg-emerald-100 border-emerald-200 text-emerald-600' : 'bg-slate-50 border-slate-200 text-slate-400'}`}>
+                                {(!document.teks_ocr || !document.summaries?.length || !document.recommendations?.length) && (
+                                    <div className="flex items-center gap-1.5 text-xs font-semibold text-blue-700 bg-blue-100 px-3 py-1.5 rounded-full animate-pulse shadow-lg shadow-blue-200/50">
+                                        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                                        <span>AUTO-REFRESH (3s)</span>
+                                    </div>
+                                )}
+                            </div>
+                        </CardHeader>
+                        <CardContent className="space-y-4 p-6">
+                            {pipelineSteps.map((step) => (
+                                <div key={step.key} className="flex items-center gap-3 group">
+                                    <div className={clsx(
+                                        "flex h-8 w-8 items-center justify-center rounded-full border transition-all duration-300",
+                                        step.done 
+                                            ? "bg-emerald-100 border-emerald-200 text-emerald-600" 
+                                            : "bg-slate-50 border-slate-200 text-slate-300"
+                                    )}>
                                         <step.icon className="h-4 w-4" />
                                     </div>
                                     <div className="flex-1">
-                                        <p className={`text-sm font-medium ${step.done ? 'text-slate-900' : 'text-slate-500'}`}>{step.label}</p>
-                                        {!step.done && (
-                                            <p className="text-xs text-slate-400 mt-0.5">Sedang diproses...</p>
-                                        )}
+                                        <p className={clsx("text-sm font-medium transition-colors", step.done ? "text-slate-900" : "text-slate-400")}>{step.label}</p>
+                                        {!step.done && <p className="text-xs text-slate-400 mt-0.5">Sedang diproses...</p>}
                                     </div>
-                                    {step.done ? <CheckCircle2 className="h-5 w-5 text-emerald-500" /> : <Circle className="h-5 w-5 text-slate-300 animate-pulse" />}
+                                    {step.done ? <CheckCircle2 className="h-5 w-5 text-emerald-500" /> : <Circle className="h-5 w-5 text-slate-200" />}
                                 </div>
                             ))}
-                        </div>
-                    </section>
+                        </CardContent>
+                    </Card>
 
                     {/* Metadata Card */}
-                    <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">Metadata</h3>
-                            {canManageSummaries && <Link to={`/documents/${document.id}/edit`}><Edit className="h-4 w-4 text-slate-400 hover:text-emerald-600" /></Link>}
-                        </div>
-                        <dl>
-                            <DetailRow label="Format File" value={document.format_file} />
-                            {document.metadata && Object.entries(document.metadata).map(([k, v]) => (
-                                <DetailRow key={k} label={k.replace('_', ' ')} value={String(v)} />
-                            ))}
-                        </dl>
-                    </section>
+                    <Card className="border-slate-200/60 shadow-xl shadow-slate-200/50 bg-white overflow-hidden">
+                        <CardHeader className="bg-linear-to-r from-slate-50 to-purple-50/50 border-b border-slate-100 flex flex-row items-center justify-between pb-4">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-lg bg-purple-100 text-purple-600">
+                                    <FileText className="h-4 w-4" />
+                                </div>
+                                <CardTitle className="text-base font-bold text-slate-900">Metadata</CardTitle>
+                            </div>
+                            {canManageSummaries && (
+                                <Button variant="ghost" size="icon" onClick={() => window.location.href=`/documents/${document.id}/edit`} className="h-8 w-8 hover:bg-purple-50">
+                                    <Edit className="h-4 w-4 text-slate-400 hover:text-purple-600 transition-colors" />
+                                </Button>
+                            )}
+                        </CardHeader>
+                        <CardContent className="p-6">
+                            <dl className="divide-y divide-slate-100">
+                                <DetailRow label="Format File" value={document.format_file} />
+                                {document.metadata && Object.entries(document.metadata).map(([k, v]) => (
+                                    <DetailRow key={k} label={k.replace('_', ' ')} value={String(v)} />
+                                ))}
+                            </dl>
+                        </CardContent>
+                    </Card>
                 </div>
 
                 {/* Middle & Right Column: Content */}
                 <div className="lg:col-span-2 space-y-6">
-                    
-                    {/* Tab-like Sections */}
-                    <div className="space-y-6">
-                        {/* AI Summary */}
-                        <section className="bg-white rounded-2xl shadow-sm border border-emerald-100 overflow-hidden">
-                            <div className="bg-linear-to-r from-emerald-50 to-white px-6 py-4 border-b border-emerald-100 flex items-center gap-2">
-                                <BrainCircuit className="h-5 w-5 text-emerald-600" />
-                                <h2 className="font-bold text-slate-900">Ringkasan Otomatis</h2>
+                    {/* AI Summary */}
+                    <Card className="overflow-hidden border-emerald-100 shadow-xl shadow-emerald-500/10 bg-white">
+                        <div className="bg-linear-to-r from-emerald-50 to-teal-50/50 px-6 py-5 border-b border-emerald-100 flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-emerald-100 text-emerald-600">
+                                <BrainCircuit className="h-5 w-5" />
                             </div>
-                            <div className="p-6 space-y-4">
-                                {(document.summaries ?? []).map((summary) => (
-                                    <div key={summary.id} className="relative pl-4 border-l-2 border-emerald-200">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${summary.tipe_ringkasan === 'publik' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'}`}>
-                                                {summary.tipe_ringkasan.toUpperCase()}
-                                            </span>
-                                            <span className="text-xs text-slate-400">{formatDate(summary.created_at)}</span>
-                                        </div>
-                                        <FormattedText text={summary.ringkasan} />
+                            <h2 className="text-lg font-bold text-slate-900">Ringkasan Otomatis</h2>
+                        </div>
+                        <CardContent className="p-6 space-y-6">
+                            {(document.summaries ?? []).map((summary) => (
+                                <div key={summary.id} className="relative pl-6 border-l-2 border-emerald-200">
+                                    <div className="absolute -left-[9px] top-0 h-4 w-4 rounded-full bg-emerald-100 border-2 border-emerald-400" />
+                                    <div className="flex items-center justify-between mb-3">
+                                        <Badge variant={summary.tipe_ringkasan === 'publik' ? 'info' : 'secondary'} className="uppercase text-[10px]">
+                                            {summary.tipe_ringkasan}
+                                        </Badge>
+                                        <span className="text-xs text-slate-400 font-medium">{formatDate(summary.created_at)}</span>
                                     </div>
-                                ))}
-                                {(!document.summaries?.length) && <p className="text-slate-400 text-sm italic">Belum ada ringkasan.</p>}
-                            </div>
-                        </section>
+                                    <FormattedText text={summary.ringkasan} />
+                                </div>
+                            ))}
+                            {(!document.summaries?.length) && (
+                                <div className="text-center py-8 text-slate-500 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                                    <BrainCircuit className="h-8 w-8 mx-auto text-slate-300 mb-2" />
+                                    <p className="text-sm">Belum ada ringkasan yang dihasilkan.</p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
 
-                        {/* Legal Recommendations */}
-                        <section className="bg-white rounded-2xl shadow-sm border border-indigo-100 overflow-hidden">
-                            <div className="bg-linear-to-r from-indigo-50 to-white px-6 py-4 border-b border-indigo-100 flex items-center gap-2">
-                                <Sparkles className="h-5 w-5 text-indigo-600" />
-                                <h2 className="font-bold text-slate-900">Analisis Hukum & Pasal</h2>
+                    {/* Legal Recommendations */}
+                    <Card className="overflow-hidden border-indigo-100 shadow-xl shadow-indigo-500/10 bg-white">
+                        <div className="bg-linear-to-r from-indigo-50 to-purple-50/50 px-6 py-5 border-b border-indigo-100 flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-indigo-100 text-indigo-600">
+                                <Sparkles className="h-5 w-5" />
                             </div>
-                            <div className="p-6">
-                                {(document.recommendations ?? []).map((rec) => (
-                                    <div key={rec.id} className="space-y-4">
-                                        <ul className="grid gap-4 sm:grid-cols-2">
-                                            {(rec.daftar_pasal ?? []).map((pasal, i) => (
-                                                <li key={i} className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                                                    <div className="flex items-center justify-between mb-2">
-                                                        <span className="font-bold text-slate-800">{pasal.nama}</span>
-                                                        <span className="text-xs font-mono bg-white px-2 py-1 border rounded text-slate-500">Pasal {pasal.pasal}</span>
+                            <h2 className="text-lg font-bold text-slate-900">Analisis Hukum & Pasal</h2>
+                        </div>
+                        <CardContent className="p-6">
+                            {(document.recommendations ?? []).map((rec) => (
+                                <div key={rec.id} className="space-y-6">
+                                    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-2">
+                                        {(rec.daftar_pasal ?? []).map((pasal, i) => (
+                                            <div key={i} className="bg-linear-to-br from-white to-indigo-50/30 rounded-xl p-5 border border-indigo-100/60 shadow-sm hover:shadow-lg hover:border-indigo-200 transition-all duration-300 group">
+                                                {/* Header dengan Badge */}
+                                                <div className="flex items-start justify-between mb-4 pb-3 border-b border-indigo-100/50">
+                                                    <div className="flex-1 mr-3">
+                                                        <h3 className="font-bold text-slate-800 text-sm leading-tight mb-1 group-hover:text-indigo-700 transition-colors">
+                                                            {pasal.nama}
+                                                        </h3>
                                                     </div>
-                                                    <p className="text-sm text-slate-600">{pasal.alasan}</p>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                        {rec.pertimbangan_llm && (
-                                            <div className="mt-4 p-4 bg-indigo-50/50 rounded-xl text-sm text-slate-700 border border-indigo-100">
-                                                <p className="font-semibold mb-1 text-indigo-900">Pertimbangan AI:</p>
-                                                {rec.pertimbangan_llm}
+                                                    <Badge variant="outline" className="font-mono text-xs shrink-0 bg-indigo-50/80 border-indigo-200 text-indigo-700 px-2.5 py-1">
+                                                        {pasal.pasal ? `Pasal ${pasal.pasal}` : 'Tidak disebutkan'}
+                                                    </Badge>
+                                                </div>
+                                                
+                                                {/* Alasan/Deskripsi */}
+                                                <div className="space-y-2">
+                                                    <p className="text-xs text-slate-600 leading-relaxed text-justify">
+                                                        {pasal.alasan}
+                                                    </p>
+                                                </div>
                                             </div>
-                                        )}
+                                        ))}
                                     </div>
-                                ))}
-                                {(!document.recommendations?.length) && <p className="text-slate-400 text-sm italic">Belum ada rekomendasi hukum.</p>}
-                            </div>
-                        </section>
+                                    
+                                    {/* Pertimbangan AI */}
+                                    {rec.pertimbangan_llm && (
+                                        <div className="mt-6 p-6 bg-linear-to-br from-indigo-50 to-purple-50/50 rounded-xl border border-indigo-200/60 shadow-sm">
+                                            <div className="flex items-center gap-2.5 mb-4 pb-3 border-b border-indigo-200/50">
+                                                <div className="p-1.5 rounded-lg bg-indigo-100">
+                                                    <Sparkles className="h-4 w-4 text-indigo-600" />
+                                                </div>
+                                                <span className="text-sm font-bold text-indigo-900">Pertimbangan AI</span>
+                                            </div>
+                                            <p className="text-sm text-slate-700 leading-relaxed text-justify">
+                                                {rec.pertimbangan_llm}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                            {(!document.recommendations?.length) && (
+                                <div className="text-center py-8 text-slate-500 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                                    <Sparkles className="h-8 w-8 mx-auto text-slate-300 mb-2" />
+                                    <p className="text-sm">Belum ada rekomendasi hukum yang dihasilkan.</p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
 
-                        {/* OCR Content */}
-                        <section className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                            <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center">
-                                <h2 className="font-bold text-slate-900">Teks Asli (OCR)</h2>
-                                {document.teks_ocr && (
-                                    <button onClick={handleCopyOcr} className="text-xs flex items-center gap-1 font-medium text-emerald-600 hover:text-emerald-700">
-                                        {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                                        {copied ? 'Tersalin' : 'Salin Teks'}
-                                    </button>
-                                )}
+                    {/* OCR Content */}
+                    <Card className="border-slate-200/60 shadow-xl shadow-slate-200/50 bg-white overflow-hidden">
+                        <CardHeader className="flex flex-row items-center justify-between bg-linear-to-r from-slate-50 to-slate-100/50 border-b border-slate-100">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-lg bg-slate-100 text-slate-600">
+                                    <FileText className="h-4 w-4" />
+                                </div>
+                                <CardTitle className="text-base font-bold text-slate-900">Teks Asli (OCR)</CardTitle>
                             </div>
-                            <div className="bg-slate-900 p-6 max-h-96 overflow-y-auto">
+                            {document.teks_ocr && (
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={handleCopyOcr}
+                                    className={clsx("h-8 text-xs gap-1.5", copied && "text-emerald-600")}
+                                >
+                                    {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                                    {copied ? 'Tersalin' : 'Salin Text'}
+                                </Button>
+                            )}
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            <div className="bg-slate-900 p-6 max-h-[500px] overflow-y-auto custom-scrollbar">
                                 <pre className="text-xs font-mono text-slate-300 whitespace-pre-wrap leading-relaxed">
                                     {document.teks_ocr || 'Menunggu proses OCR...'}
                                 </pre>
                             </div>
-                        </section>
+                        </CardContent>
+                    </Card>
 
-                        {/* Manual Input */}
-                        {canManageSummaries && (
-                            <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                                <h2 className="font-bold text-slate-900 mb-4">Tambah Ringkasan Manual</h2>
+                    {/* Manual Input */}
+                    {canManageSummaries && (
+                        <Card className="border-slate-200/60 shadow-xl shadow-slate-200/50 bg-white overflow-hidden">
+                            <CardHeader className="bg-linear-to-r from-slate-50 to-emerald-50/50 border-b border-slate-100">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 rounded-lg bg-emerald-100 text-emerald-600">
+                                        <Edit className="h-4 w-4" />
+                                    </div>
+                                    <CardTitle className="text-base font-bold text-slate-900">Tambah Ringkasan Manual</CardTitle>
+                                </div>
+                            </CardHeader>
+                            <CardContent>
                                 <form onSubmit={handleManualSummary} className="space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Tipe Ringkasan</label>
+                                    <div className="space-y-1.5">
+                                        <label className="text-sm font-medium text-slate-700">Tipe Ringkasan</label>
                                         <select 
-                                            className="w-full rounded-lg border-slate-300 focus:ring-emerald-500 focus:border-emerald-500"
+                                            className="w-full rounded-lg border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                                             value={summaryType}
                                             onChange={(e) => setSummaryType(e.target.value)}
                                         >
                                             {SUMMARY_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                                         </select>
                                     </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Isi Ringkasan</label>
+                                    <div className="space-y-1.5">
+                                        <label className="text-sm font-medium text-slate-700">Isi Ringkasan</label>
                                         <textarea 
-                                            className="w-full rounded-lg border-slate-300 focus:ring-emerald-500 focus:border-emerald-500"
-                                            rows={4}
+                                            className="w-full rounded-lg border-slate-200 text-sm p-3 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all min-h-[120px]"
                                             value={summaryText}
                                             onChange={(e) => setSummaryText(e.target.value)}
-                                            placeholder="Ketik ringkasan manual..."
+                                            placeholder="Ketik ringkasan manual di sini..."
                                         />
                                     </div>
                                     <div className="flex justify-end">
-                                        <button 
+                                        <Button 
                                             type="submit" 
-                                            disabled={manualSummary.isPending}
-                                            className="bg-slate-900 text-white px-6 py-2 rounded-lg font-medium hover:bg-slate-800 transition-colors"
+                                            isLoading={manualSummary.isPending}
                                         >
-                                            {manualSummary.isPending ? 'Menyimpan...' : 'Simpan'}
-                                        </button>
+                                            Simpan Ringkasan
+                                        </Button>
                                     </div>
                                 </form>
-                            </section>
-                        )}
-                    </div>
+                            </CardContent>
+                        </Card>
+                    )}
                 </div>
+            </div>
             </div>
         </div>
     );

@@ -3,32 +3,22 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { CASE_TYPES } from '@/constants';
 import { usePerkara, useUpdatePerkara } from '@/api/hooks';
 import { 
-    ArrowLeft, Save, AlertCircle, Loader2, Pencil,
-    Calendar, Building2, DollarSign, MessageSquare, X
+    ArrowLeft, Save, AlertCircle, Loader2, Calendar, 
+    Building2, DollarSign, MessageSquare, Briefcase, Pencil, 
+    Scale, CheckCircle2, Gavel, Info
 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
+import { Badge } from '@/components/ui/Badge';
 
 const STATUS_OPTIONS = [
-    { value: 'draft', label: 'Draft' },
-    { value: 'review', label: 'Review' },
-    { value: 'processed', label: 'Diproses' },
-    { value: 'published', label: 'Publik' },
+    { value: 'draft', label: 'Draft', color: 'bg-slate-100 text-slate-700 border-slate-200' },
+    { value: 'review', label: 'Review', color: 'bg-amber-100 text-amber-700 border-amber-200' },
+    { value: 'processed', label: 'Diproses', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+    { value: 'published', label: 'Publik', color: 'bg-blue-100 text-blue-700 border-blue-200' },
 ];
-
-const FormField = ({ label, required, error, children }) => (
-    <div className="space-y-2">
-        <label className="block text-sm font-semibold text-slate-700">
-            {label}
-            {required && <span className="ml-1 text-red-500">*</span>}
-        </label>
-        {children}
-        {error && (
-            <div className="flex items-center gap-2 text-sm text-red-600 mt-1.5">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                {error}
-            </div>
-        )}
-    </div>
-);
 
 const CaseEditPage = () => {
     const navigate = useNavigate();
@@ -44,6 +34,7 @@ const CaseEditPage = () => {
     const [catatan, setCatatan] = useState('');
     const [nilaiGugatan, setNilaiGugatan] = useState('');
     const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
 
     useEffect(() => {
         if (!perkara) return;
@@ -59,6 +50,7 @@ const CaseEditPage = () => {
     const handleSubmit = (event) => {
         event.preventDefault();
         setError('');
+        setSuccess('');
 
         if (!nomorPerkara.trim()) {
             setError('Nomor perkara wajib diisi.');
@@ -79,7 +71,10 @@ const CaseEditPage = () => {
                 },
             },
             {
-                onSuccess: () => navigate('/cases'),
+                onSuccess: () => {
+                    setSuccess('Perkara berhasil diperbarui!');
+                    setTimeout(() => navigate('/cases'), 1500);
+                },
                 onError: (apiError) => {
                     const message =
                         apiError.response?.data?.message ||
@@ -93,9 +88,9 @@ const CaseEditPage = () => {
 
     if (isLoading && !perkara) {
         return (
-            <div className="min-h-screen bg-linear-to-br from-slate-50 via-white to-emerald-50/30 flex items-center justify-center">
-                <div className="flex flex-col items-center gap-4">
-                    <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+            <div className="min-h-screen bg-linear-to-br from-slate-50 via-blue-50/30 to-indigo-50/30 flex items-center justify-center">
+                <div className="text-center">
+                    <Loader2 className="h-10 w-10 animate-spin text-emerald-600 mx-auto mb-4" />
                     <p className="text-slate-600 font-medium">Memuat data perkara...</p>
                 </div>
             </div>
@@ -104,218 +99,265 @@ const CaseEditPage = () => {
 
     if (!perkara) {
         return (
-            <div className="min-h-screen bg-linear-to-br from-slate-50 via-white to-emerald-50/30 flex items-center justify-center px-4">
+            <div className="min-h-screen bg-linear-to-br from-slate-50 via-blue-50/30 to-indigo-50/30 flex items-center justify-center">
                 <div className="text-center">
-                    <p className="text-slate-600 mb-4">Perkara tidak ditemukan.</p>
-                    <Link 
-                        to="/cases" 
-                        className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500"
-                    >
-                        <ArrowLeft className="h-4 w-4" />
-                        Kembali ke Daftar
-                    </Link>
+                    <div className="bg-slate-100 p-4 rounded-full inline-block mb-4">
+                        <Gavel className="h-10 w-10 text-slate-400" />
+                    </div>
+                    <p className="text-slate-600 font-medium mb-4">Perkara tidak ditemukan.</p>
+                    <Button onClick={() => navigate('/cases')}>Kembali ke Daftar</Button>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-linear-to-br from-slate-50 via-white to-emerald-50/30 pb-12 pt-6 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-4xl mx-auto">
+        <div className="min-h-screen bg-linear-to-br from-slate-50 via-blue-50/30 to-indigo-50/30">
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 {/* Header */}
-                <div className="mb-8 flex items-center justify-between">
-                    <Link
-                        to="/cases"
-                        className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors group"
-                    >
-                        <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-                        Kembali ke Daftar
-                    </Link>
+                <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-blue-600 via-indigo-600 to-violet-600 p-6 shadow-2xl shadow-blue-500/20">
+                    <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjEiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-30" />
+                    <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                        <div className="flex items-center gap-4">
+                            <Button 
+                                variant="outline" 
+                                size="icon" 
+                                onClick={() => navigate('/cases')}
+                                className="shrink-0 bg-white/90 hover:bg-white border-white/50 backdrop-blur-sm shadow-lg h-10 w-10"
+                            >
+                                <ArrowLeft className="h-5 w-5 text-slate-700" />
+                            </Button>
+                            <div>
+                                <Badge className="mb-2 bg-white/20 text-white border-white/30 backdrop-blur-sm">
+                                    <Pencil className="h-3 w-3 mr-1.5" />
+                                    Edit Perkara
+                                </Badge>
+                                <h1 className="text-2xl font-bold text-white tracking-tight">{perkara.nomor_perkara}</h1>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <Badge className={`${STATUS_OPTIONS.find(s => s.value === perkara.status)?.color || 'bg-slate-100 text-slate-700'} px-3 py-1.5`}>
+                                {STATUS_OPTIONS.find(s => s.value === perkara.status)?.label || perkara.status}
+                            </Badge>
+                        </div>
+                    </div>
                 </div>
 
-                {/* Main Card */}
-                <div className="rounded-3xl border border-slate-200/50 bg-white/80 backdrop-blur-sm shadow-xl p-8 md:p-10">
-                    {/* Title Section */}
-                    <div className="mb-10">
-                        <div className="flex items-center gap-3 mb-3">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br from-blue-100 to-cyan-100">
-                                <Pencil className="h-6 w-6 text-blue-600" />
+                {/* Success Message */}
+                {success && (
+                    <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-4 flex items-center gap-3 animate-in slide-in-from-top-2">
+                        <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+                        <p className="text-sm font-medium text-emerald-800">{success}</p>
+                    </div>
+                )}
+
+                {/* Main Content Grid */}
+                <div className="grid lg:grid-cols-3 gap-6">
+                    {/* Left Column - Main Form */}
+                    <div className="lg:col-span-2 space-y-6">
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            {/* Informasi Dasar */}
+                            <Card className="border-slate-200/60 shadow-xl shadow-slate-200/50 bg-white overflow-hidden">
+                                <CardHeader className="bg-linear-to-r from-slate-50 to-emerald-50/50 border-b border-slate-100 py-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 rounded-lg bg-emerald-100 text-emerald-600">
+                                            <Briefcase className="h-4 w-4" />
+                                        </div>
+                                        <CardTitle className="text-base font-bold text-slate-900">Informasi Dasar</CardTitle>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="p-5 space-y-4">
+                                    <div className="grid md:grid-cols-2 gap-4">
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-semibold text-slate-600">Nomor Perkara <span className="text-red-500">*</span></Label>
+                                            <div className="relative">
+                                                <Briefcase className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                                                <Input 
+                                                    className="pl-9 font-mono text-sm h-9"
+                                                    value={nomorPerkara}
+                                                    onChange={(e) => setNomorPerkara(e.target.value.toUpperCase())}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-semibold text-slate-600">Jenis Perkara <span className="text-red-500">*</span></Label>
+                                            <select
+                                                className="flex h-9 w-full rounded-lg border border-slate-200 bg-white px-3 py-1 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1"
+                                                value={jenisPerkara}
+                                                onChange={(e) => setJenisPerkara(e.target.value)}
+                                            >
+                                                {CASE_TYPES.map((type) => (
+                                                    <option key={type.value} value={type.value}>
+                                                        {type.label}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Jadwal & Lokasi */}
+                            <Card className="border-slate-200/60 shadow-xl shadow-slate-200/50 bg-white overflow-hidden">
+                                <CardHeader className="bg-linear-to-r from-slate-50 to-blue-50/50 border-b border-slate-100 py-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
+                                            <Calendar className="h-4 w-4" />
+                                        </div>
+                                        <CardTitle className="text-base font-bold text-slate-900">Jadwal & Lokasi</CardTitle>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="p-5 space-y-4">
+                                    <div className="grid md:grid-cols-3 gap-4">
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-semibold text-slate-600">Status</Label>
+                                            <select
+                                                className="flex h-9 w-full rounded-lg border border-slate-200 bg-white px-3 py-1 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1"
+                                                value={status}
+                                                onChange={(e) => setStatus(e.target.value)}
+                                            >
+                                                {STATUS_OPTIONS.map((item) => (
+                                                    <option key={item.value} value={item.value}>
+                                                        {item.label}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-semibold text-slate-600">Tanggal Masuk</Label>
+                                            <div className="relative">
+                                                <Calendar className="absolute left-3 top-2 h-4 w-4 text-slate-400" />
+                                                <Input 
+                                                    type="date"
+                                                    className="pl-9 text-sm h-9"
+                                                    value={tanggalMasuk}
+                                                    onChange={(e) => setTanggalMasuk(e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-semibold text-slate-600">Pengadilan Asal</Label>
+                                            <div className="relative">
+                                                <Building2 className="absolute left-3 top-2 h-4 w-4 text-slate-400" />
+                                                <Input 
+                                                    className="pl-9 text-sm h-9"
+                                                    placeholder="PA Jakarta Selatan"
+                                                    value={pengadilanAsal}
+                                                    onChange={(e) => setPengadilanAsal(e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Informasi Tambahan */}
+                            <Card className="border-slate-200/60 shadow-xl shadow-slate-200/50 bg-white overflow-hidden">
+                                <CardHeader className="bg-linear-to-r from-slate-50 to-amber-50/50 border-b border-slate-100 py-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 rounded-lg bg-amber-100 text-amber-600">
+                                            <MessageSquare className="h-4 w-4" />
+                                        </div>
+                                        <CardTitle className="text-base font-bold text-slate-900">Informasi Tambahan</CardTitle>
+                                        <Badge variant="secondary" className="text-xs">Opsional</Badge>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="p-5 space-y-4">
+                                    <div className="grid md:grid-cols-2 gap-4">
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-semibold text-slate-600">Nilai Gugatan</Label>
+                                            <div className="relative">
+                                                <DollarSign className="absolute left-3 top-2 h-4 w-4 text-slate-400" />
+                                                <Input 
+                                                    className="pl-9 text-sm h-9"
+                                                    placeholder="150.000.000"
+                                                    value={nilaiGugatan}
+                                                    onChange={(e) => setNilaiGugatan(e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-semibold text-slate-600">Catatan Internal</Label>
+                                            <div className="relative">
+                                                <MessageSquare className="absolute left-3 top-2 h-4 w-4 text-slate-400" />
+                                                <Input 
+                                                    className="pl-9 text-sm h-9"
+                                                    placeholder="Catatan untuk tim internal"
+                                                    value={catatan}
+                                                    onChange={(e) => setCatatan(e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Error Alert */}
+                            {error && (
+                                <div className="flex items-center gap-3 p-4 rounded-xl bg-red-50 text-red-800 text-sm border border-red-100 animate-in slide-in-from-top-2">
+                                    <AlertCircle className="h-5 w-5 shrink-0" />
+                                    <p className="font-medium">{error}</p>
+                                </div>
+                            )}
+
+                            {/* Actions */}
+                            <div className="flex items-center gap-3">
+                                <Button type="submit" isLoading={updatePerkara.isPending} className="px-6 h-10 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-lg shadow-emerald-500/25">
+                                    <Save className="mr-2 h-4 w-4" /> Simpan Perubahan
+                                </Button>
+                                <Button type="button" variant="outline" onClick={() => navigate('/cases')} className="h-10">
+                                    Batalkan
+                                </Button>
                             </div>
-                            <div>
-                                <h1 className="text-3xl font-bold text-slate-900">Edit Perkara</h1>
-                                <p className="text-sm text-slate-600">Nomor Perkara: <span className="font-mono font-semibold">{perkara.nomor_perkara}</span></p>
+                        </form>
+                    </div>
+
+                    {/* Right Column - Info Panel */}
+                    <div className="space-y-6">
+                        {/* Quick Info */}
+                        <Card className="border-slate-200/60 shadow-xl shadow-slate-200/50 bg-white overflow-hidden">
+                            <CardHeader className="bg-linear-to-r from-slate-50 to-purple-50/50 border-b border-slate-100 py-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 rounded-lg bg-purple-100 text-purple-600">
+                                        <Info className="h-4 w-4" />
+                                    </div>
+                                    <CardTitle className="text-base font-bold text-slate-900">Ringkasan</CardTitle>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="p-5 space-y-4">
+                                <div className="space-y-3">
+                                    <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                                        <span className="text-xs font-medium text-slate-500 uppercase">ID Perkara</span>
+                                        <span className="text-sm font-bold text-slate-900">#{perkara.id}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                                        <span className="text-xs font-medium text-slate-500 uppercase">Dibuat</span>
+                                        <span className="text-sm font-medium text-slate-700">{new Date(perkara.created_at).toLocaleDateString('id-ID')}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center py-2">
+                                        <span className="text-xs font-medium text-slate-500 uppercase">Dokumen</span>
+                                        <Badge variant="secondary" className="text-xs">{perkara.documents?.length || 0} file</Badge>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Tips */}
+                        <div className="bg-blue-50 rounded-xl border border-blue-100 p-4">
+                            <div className="flex items-start gap-3">
+                                <Info className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
+                                <div>
+                                    <h4 className="font-semibold text-blue-900 text-sm mb-1">Tips</h4>
+                                    <ul className="text-xs text-blue-800 space-y-1 list-disc pl-3">
+                                        <li>Gunakan format nomor perkara yang standar</li>
+                                        <li>Status akan mempengaruhi tampilan di portal publik</li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                     </div>
-
-                    <form onSubmit={handleSubmit} className="space-y-8">
-                        {/* Section 1: Informasi Dasar */}
-                        <div>
-                            <div className="flex items-center gap-2 mb-6">
-                                <div className="h-1 w-1 rounded-full bg-emerald-600" />
-                                <h2 className="text-lg font-bold text-slate-900">Informasi Dasar</h2>
-                            </div>
-                            
-                            <div className="grid gap-6 md:grid-cols-2">
-                                <FormField label="Nomor Perkara" required>
-                                    <input
-                                        type="text"
-                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-mono"
-                                        value={nomorPerkara}
-                                        onChange={(e) => setNomorPerkara(e.target.value.toUpperCase())}
-                                    />
-                                </FormField>
-
-                                <FormField label="Jenis Perkara" required>
-                                    <select
-                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                                        value={jenisPerkara}
-                                        onChange={(e) => setJenisPerkara(e.target.value)}
-                                    >
-                                        {CASE_TYPES.map((type) => (
-                                            <option key={type.value} value={type.value}>
-                                                {type.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </FormField>
-                            </div>
-                        </div>
-
-                        {/* Section 2: Jadwal & Lokasi */}
-                        <div>
-                            <div className="flex items-center gap-2 mb-6">
-                                <div className="h-1 w-1 rounded-full bg-blue-600" />
-                                <h2 className="text-lg font-bold text-slate-900">Jadwal & Lokasi</h2>
-                            </div>
-
-                            <div className="grid gap-6 md:grid-cols-3">
-                                <FormField label="Status">
-                                    <div className="relative">
-                                        <select
-                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all appearance-none"
-                                            value={status}
-                                            onChange={(e) => setStatus(e.target.value)}
-                                        >
-                                            {STATUS_OPTIONS.map((item) => (
-                                                <option key={item.value} value={item.value}>
-                                                    {item.label}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </FormField>
-
-                                <FormField label="Tanggal Masuk">
-                                    <div className="relative">
-                                        <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                                        <input
-                                            type="date"
-                                            className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                                            value={tanggalMasuk ?? ''}
-                                            onChange={(e) => setTanggalMasuk(e.target.value)}
-                                        />
-                                    </div>
-                                </FormField>
-
-                                <FormField label="Pengadilan Asal">
-                                    <div className="relative">
-                                        <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                                        <input
-                                            type="text"
-                                            className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                                            value={pengadilanAsal}
-                                            onChange={(e) => setPengadilanAsal(e.target.value)}
-                                        />
-                                    </div>
-                                </FormField>
-                            </div>
-                        </div>
-
-                        {/* Section 3: Informasi Tambahan */}
-                        <div className="pt-4 border-t border-slate-200">
-                            <div className="flex items-center gap-2 mb-6">
-                                <div className="h-1 w-1 rounded-full bg-amber-600" />
-                                <h2 className="text-lg font-bold text-slate-900">Informasi Tambahan</h2>
-                                <span className="text-xs font-medium text-slate-500">(Opsional)</span>
-                            </div>
-
-                            <div className="grid gap-6 md:grid-cols-2">
-                                <FormField label="Nilai Gugatan">
-                                    <div className="relative">
-                                        <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                                        <input
-                                            type="text"
-                                            className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                                            value={nilaiGugatan}
-                                            onChange={(e) => setNilaiGugatan(e.target.value)}
-                                        />
-                                    </div>
-                                </FormField>
-
-                                <FormField label="Catatan Internal">
-                                    <div className="relative">
-                                        <MessageSquare className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                                        <input
-                                            type="text"
-                                            className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                                            value={catatan}
-                                            onChange={(e) => setCatatan(e.target.value)}
-                                        />
-                                    </div>
-                                </FormField>
-                            </div>
-                        </div>
-
-                        {/* Error Alert */}
-                        {error && (
-                            <div className="rounded-xl bg-red-50 border border-red-200 p-4 flex items-start gap-3 animate-shake">
-                                <AlertCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
-                                <p className="text-sm font-medium text-red-800">{error}</p>
-                            </div>
-                        )}
-
-                        {/* Actions */}
-                        <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-slate-200">
-                            <button
-                                type="submit"
-                                disabled={updatePerkara.isPending}
-                                className="flex-1 sm:flex-none flex items-center justify-center gap-2 rounded-xl bg-linear-to-r from-emerald-600 to-teal-600 px-6 py-3 text-sm font-semibold text-white shadow-lg hover:shadow-xl hover:from-emerald-500 hover:to-teal-500 transition-all disabled:opacity-50 active:scale-95"
-                            >
-                                {updatePerkara.isPending ? (
-                                    <>
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                        Menyimpan...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Save className="h-4 w-4" />
-                                        Simpan Perubahan
-                                    </>
-                                )}
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => navigate('/cases')}
-                                className="flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all"
-                            >
-                                Batalkan
-                            </button>
-                        </div>
-                    </form>
                 </div>
             </div>
-
-            <style>{`
-                @keyframes shake {
-                    0%, 100% { transform: translateX(0); }
-                    25% { transform: translateX(-5px); }
-                    75% { transform: translateX(5px); }
-                }
-                .animate-shake {
-                    animation: shake 0.5s ease-in-out;
-                }
-            `}</style>
         </div>
     );
 };

@@ -2,13 +2,16 @@ import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { usePublicDecisions } from '@/api/hooks';
 import { formatDate } from '@/utils/format';
-import { getStatusClass } from '@/pages/helpers';
 import { logout as logoutRequest } from '@/api/auth';
 import { useAuthStore } from '@/store/authStore';
 import { 
     LogOut, Search, Filter, Calendar, FileText, Gavel, X, 
     ChevronRight, Scale, Lock, Eye, EyeOff, Loader2
 } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Badge } from '@/components/ui/Badge';
+import { Card, CardContent } from '@/components/ui/Card';
 
 const getFirstPublicSummary = (decision) => {
     for (const doc of decision.documents ?? []) {
@@ -28,98 +31,113 @@ const DecisionCard = ({ decision }) => {
     const shouldTruncate = summaryText.length > 260;
     const displayText = expanded || !shouldTruncate ? summaryText : `${summaryText.slice(0, 260)}…`;
 
-    const getStatusColor = (status) => {
+    const getStatusVariant = (status) => {
         switch(status) {
-            case 'processed':
-                return 'bg-emerald-100 text-emerald-700 ring-emerald-200';
-            case 'review':
-                return 'bg-amber-100 text-amber-700 ring-amber-200';
-            case 'rejected':
-                return 'bg-red-100 text-red-700 ring-red-200';
-            default:
-                return 'bg-slate-100 text-slate-700 ring-slate-200';
+            case 'processed': return 'success';
+            case 'review': return 'warning';
+            case 'rejected': return 'destructive';
+            default: return 'secondary';
         }
     };
 
     return (
-        <article className="group rounded-2xl border border-slate-200/50 bg-white/70 backdrop-blur-sm p-6 shadow-sm transition-all duration-300 hover:shadow-xl hover:border-emerald-200 overflow-hidden">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
-                <div className="flex-1">
-                    <p className="text-xs uppercase tracking-widest font-semibold text-slate-500 mb-2">Nomor Perkara</p>
-                    <h2 className="text-xl font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">
-                        {decision.nomor_perkara}
-                    </h2>
-                </div>
-                <span className={`inline-flex items-center rounded-full px-4 py-2 text-xs font-semibold ring-1 ring-inset whitespace-nowrap ${getStatusColor(decision.status)}`}>
-                    {decision.status === 'processed' && '✓ Diterbitkan'}
-                    {decision.status === 'review' && '◐ Dalam Review'}
-                    {decision.status === 'rejected' && '✕ Ditolak'}
-                    {!['processed', 'review', 'rejected'].includes(decision.status) && decision.status}
-                </span>
-            </div>
-
-            {/* Meta Info */}
-            <div className="flex flex-wrap items-center gap-4 mb-5 pb-5 border-b border-slate-100">
-                <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <Gavel className="h-4 w-4 text-emerald-600" />
-                    {decision.pengadilan_asal}
-                </div>
-                <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <Calendar className="h-4 w-4 text-slate-400" />
-                    {formatDate(decision.tanggal_masuk)}
-                </div>
-            </div>
-
-            {/* Document Types */}
-            {decision.documents && decision.documents.length > 0 && (
-                <div className="mb-5">
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Dokumen</p>
-                    <div className="flex flex-wrap gap-2">
-                        {decision.documents.map((doc) => (
-                            <span
-                                key={doc.id}
-                                className="inline-flex items-center gap-1.5 rounded-full bg-linear-to-r from-slate-100 to-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 border border-slate-200"
-                            >
-                                <FileText className="h-3 w-3" />
-                                {doc.jenis_dokumen}
-                            </span>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* Summary Section */}
-            {publicSummary ? (
-                <div className="rounded-xl border border-emerald-100 bg-linear-to-br from-emerald-50 to-teal-50 p-5">
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full bg-emerald-600" />
-                            <span className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Ringkasan Publik</span>
+        <Card className="group overflow-hidden border-slate-200/60 bg-white shadow-lg hover:shadow-xl transition-all duration-300">
+            <CardContent className="p-0">
+                {/* Header with Case Number and Status */}
+                <div className="bg-linear-to-r from-slate-50 to-emerald-50/30 px-6 py-4 border-b border-slate-100">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                        <div className="flex-1">
+                            <p className="text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1.5 flex items-center gap-1.5">
+                                <div className="h-1 w-1 rounded-full bg-emerald-500"></div>
+                                Nomor Perkara
+                            </p>
+                            <h2 className="text-2xl font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">
+                                {decision.nomor_perkara}
+                            </h2>
                         </div>
-                        <span className="text-xs font-medium text-slate-500">{formatDate(publicSummary.created_at)}</span>
-                    </div>
-                    <p className="text-sm leading-relaxed text-slate-700 whitespace-pre-line">{displayText}</p>
-                    {shouldTruncate && (
-                        <button
-                            type="button"
-                            onClick={() => setExpanded((prev) => !prev)}
-                            className="mt-4 inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition-all hover:bg-emerald-500 active:scale-95"
+                        <Badge 
+                            variant={getStatusVariant(decision.status)} 
+                            className="px-4 py-1.5 text-xs font-semibold shrink-0"
                         >
-                            {expanded ? 'Sembunyikan' : 'Baca Lengkap'}
-                            <ChevronRight className="h-3 w-3" style={{ transform: expanded ? 'rotate(90deg)' : 'rotate(0)' }} />
-                        </button>
+                            {decision.status === 'processed' && 'Published'}
+                            {decision.status === 'review' && 'In Review'}
+                            {decision.status === 'rejected' && 'Rejected'}
+                            {!['processed', 'review', 'rejected'].includes(decision.status) && decision.status}
+                        </Badge>
+                    </div>
+                </div>
+
+                <div className="p-6 space-y-5">
+                    {/* Court and Date Info */}
+                    <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
+                        <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg">
+                            <Gavel className="h-4 w-4 text-emerald-600" />
+                            <span className="font-medium">{decision.pengadilan_asal}</span>
+                        </div>
+                        <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg">
+                            <Calendar className="h-4 w-4 text-slate-400" />
+                            <span>{formatDate(decision.tanggal_masuk)}</span>
+                        </div>
+                    </div>
+
+                    {/* Documents Section - Show only if exists */}
+                    {decision.documents && decision.documents.length > 0 && (
+                        <div>
+                            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                                <FileText className="h-3.5 w-3.5" />
+                                Dokumen ({decision.documents.length})
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                                {decision.documents.map((doc) => (
+                                    <Badge 
+                                        key={doc.id} 
+                                        variant="secondary" 
+                                        className="bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 px-3 py-1"
+                                    >
+                                        {doc.jenis_dokumen}
+                                    </Badge>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Public Summary */}
+                    {publicSummary ? (
+                        <div className="rounded-xl border-2 border-emerald-100 bg-linear-to-br from-emerald-50/50 to-teal-50/30 p-6 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="relative flex h-2.5 w-2.5">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                                    </div>
+                                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">Ringkasan Publik</span>
+                                </div>
+                                <span className="text-xs font-medium text-slate-500 bg-white/50 px-2 py-1 rounded">{formatDate(publicSummary.created_at)}</span>
+                            </div>
+                            <p className="text-sm leading-relaxed text-slate-700 whitespace-pre-line">{displayText}</p>
+                            {shouldTruncate && (
+                                <Button
+                                    variant="link"
+                                    size="sm"
+                                    onClick={() => setExpanded((prev) => !prev)}
+                                    className="mt-2 p-0 h-auto text-emerald-700 font-semibold hover:text-emerald-800 flex items-center gap-1"
+                                >
+                                    {expanded ? 'Sembunyikan' : 'Baca Selengkapnya'}
+                                    <ChevronRight className={`h-4 w-4 transition-transform ${expanded ? 'rotate-90' : ''}`} />
+                                </Button>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="rounded-xl bg-slate-50 border-2 border-dashed border-slate-200 p-6 text-center">
+                            <Lock className="h-8 w-8 mx-auto text-slate-300 mb-2" />
+                            <p className="text-sm text-slate-500 font-medium">
+                                Ringkasan publik belum tersedia untuk perkara ini
+                            </p>
+                        </div>
                     )}
                 </div>
-            ) : (
-                <div className="rounded-xl bg-slate-50 border border-slate-200 p-5">
-                    <p className="text-sm text-slate-600 flex items-center gap-2">
-                        <Lock className="h-4 w-4 text-slate-400" />
-                        Ringkasan publik belum tersedia untuk perkara ini.
-                    </p>
-                </div>
-            )}
-        </article>
+            </CardContent>
+        </Card>
     );
 };
 
@@ -155,106 +173,120 @@ const PublicPortalPage = () => {
     }, [decisions, searchQuery, filterStatus]);
 
     return (
-        <div className="min-h-screen bg-linear-to-br from-slate-50 via-white to-emerald-50/30">
-            {/* Hero Header */}
-            <header className="relative overflow-hidden border-b border-slate-200/50 bg-white/80 backdrop-blur-md">
-                <div className="absolute inset-0 z-0">
-                    <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-100/30 rounded-full blur-3xl" />
-                    <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-100/20 rounded-full blur-3xl" />
-                </div>
-
-                <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-12">
-                    <div className="flex flex-col gap-6">
-                        {/* Header Content */}
-                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                            <div>
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br from-emerald-600 to-teal-600 shadow-lg">
-                                        <Scale className="h-6 w-6 text-white" />
+        <div className="min-h-screen bg-linear-to-br from-slate-50 via-emerald-50/30 to-teal-50/30">
+            {/* Hero Header with Official PTA Bandung Branding */}
+            <header className="relative overflow-hidden rounded-2xl bg-linear-to-br from-emerald-600 via-teal-600 to-cyan-600 p-8 shadow-2xl shadow-emerald-500/20 mb-8 mx-4 mt-4">
+                {/* Background Pattern */}
+                <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjEiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-30" />
+                
+                <div className="relative z-20">
+                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-8 mb-8">
+                        <div className="flex-1">
+                            {/* Official Logo & Branding */}
+                            <div className="flex items-start gap-5 mb-6">
+                                <div className="relative shrink-0">
+                                    <div className="h-16 w-16 md:h-20 md:w-20 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
+                                        <Scale className="h-9 w-9 md:h-11 md:w-11 text-white" />
                                     </div>
-                                    <div>
-                                        <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">Portal Publik</p>
-                                        <h1 className="text-3xl sm:text-4xl font-bold text-slate-900">Putusan PTA Digital</h1>
+                                    <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-yellow-400 ring-2 ring-white flex items-center justify-center">
+                                        <span className="h-2 w-2 rounded-full bg-white animate-pulse"></span>
                                     </div>
                                 </div>
-                                <p className="text-slate-600">Akses ringkasan putusan yang telah dipublikasikan dan diverifikasi secara resmi.</p>
-                                {token && (
-                                    <p className="mt-2 text-sm text-slate-500 flex items-center gap-2">
-                                        <Eye className="h-4 w-4 text-emerald-600" />
-                                        Masuk sebagai <span className="font-semibold text-slate-700">{user?.name ?? 'pengguna'}</span>
-                                    </p>
-                                )}
+                                <div className="space-y-2">
+                                    <div className="mb-2 inline-block px-3 py-1 rounded-full bg-white/20 text-white border border-white/30 backdrop-blur-sm text-xs font-semibold uppercase tracking-wide">
+                                        Portal Publik
+                                    </div>
+                                    <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight leading-tight">
+                                        Pengadilan Tinggi Agama
+                                        <span className="block text-emerald-50 mt-1">
+                                            Kota Bandung
+                                        </span>
+                                    </h1>
+                                </div>
                             </div>
-
-                            <div className="flex gap-3">
-                                {token ? (
-                                    <button
-                                        type="button"
-                                        onClick={handleLogout}
-                                        disabled={isLoggingOut}
-                                        className="flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50 disabled:opacity-50"
-                                    >
-                                        {isLoggingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
-                                        {isLoggingOut ? 'Keluar...' : 'Keluar'}
-                                    </button>
-                                ) : (
-                                    <Link
-                                        to="/login"
-                                        className="flex items-center gap-2 rounded-lg bg-linear-to-r from-emerald-600 to-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg hover:shadow-xl transition-all"
-                                    >
-                                        <Lock className="h-4 w-4" />
-                                        Masuk Sistem
-                                    </Link>
-                                )}
-                            </div>
+                            
+                            <p className="text-lg text-emerald-50 leading-relaxed max-w-2xl">
+                                Akses transparan ke ringkasan putusan yang telah dipublikasikan dan diverifikasi secara resmi oleh Pengadilan Tinggi Agama.
+                            </p>
+                            
+                            {token && (
+                                <div className="mt-6 inline-flex items-center gap-3 px-4 py-2.5 rounded-xl bg-white/20 border border-white/30 backdrop-blur-sm text-white">
+                                    <div className="h-2.5 w-2.5 rounded-full bg-yellow-400 animate-pulse"></div>
+                                    <span className="text-sm font-medium">Masuk sebagai <span className="font-bold">{user?.name ?? 'Pengguna'}</span></span>
+                                </div>
+                            )}
                         </div>
 
-                        {/* Search and Filter Section */}
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                            <div className="flex-1 relative">
-                                <div className="relative">
-                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
-                                    <input
-                                        type="text"
-                                        placeholder="Cari nomor perkara atau pengadilan asal..."
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="w-full pl-11 pr-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-                                    />
-                                </div>
+                        <div className="shrink-0">
+                            {token ? (
+                                <Button 
+                                    variant="outline" 
+                                    onClick={handleLogout} 
+                                    disabled={isLoggingOut}
+                                    className="gap-2 bg-white/10 border-white/30 text-white hover:bg-white/20 backdrop-blur-sm"
+                                >
+                                    {isLoggingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
+                                    Keluar
+                                </Button>
+                            ) : (
+                                <Button className="bg-white text-emerald-700 hover:bg-emerald-50 shadow-xl shadow-black/10 border-0 font-semibold gap-2" asChild>
+                                    <Link to="/login">
+                                        {/* <Lock className="h-4 w-4" /> */}
+                                        Log out
+                                    </Link>
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Enhanced Search Bar */}
+                    <div className="max-w-3xl">
+                        <div className="bg-white/10 backdrop-blur-xl p-2 rounded-2xl shadow-xl border border-white/20 flex flex-col sm:flex-row gap-2">
+                            <div className="relative flex-1">
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Cari nomor perkara atau pengadilan..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full pl-12 pr-4 py-3.5 rounded-xl border-0 bg-white/90 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 text-base shadow-inner"
+                                />
                             </div>
-                            <button
-                                onClick={() => setShowFilters(!showFilters)}
-                                className="flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
-                            >
+                             <Button
+                                 variant={showFilters ? "primary" : "secondary"}
+                                 onClick={() => setShowFilters(!showFilters)}
+                                 className="gap-2 shrink-0 rounded-xl"
+                             >
                                 <Filter className="h-4 w-4" />
                                 Filter
-                            </button>
+                            </Button>
                         </div>
 
-                        {/* Advanced Filters */}
+                        {/* Filter Panel */}
                         {showFilters && (
-                            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 mb-3">Status Perkara</p>
-                                <div className="flex flex-wrap gap-2">
-                                    {[
-                                        { value: 'all', label: 'Semua Status' },
-                                        { value: 'processed', label: 'Diterbitkan' },
-                                        { value: 'review', label: 'Dalam Review' },
-                                        { value: 'rejected', label: 'Ditolak' },
-                                    ].map(option => (
-                                        <button
-                                            key={option.value}
-                                            onClick={() => setFilterStatus(option.value)}
-                                            className={`rounded-full px-4 py-2 text-xs font-semibold transition-all ${
-                                                filterStatus === option.value
-                                                    ? 'bg-emerald-600 text-white shadow-lg'
-                                                    : 'bg-white border border-slate-200 text-slate-700 hover:border-emerald-300'
-                                            }`}
-                                        >
-                                            {option.label}
-                                        </button>
-                                    ))}
+                            <div className="mt-4 animate-in slide-in-from-top-2">
+                                <div className="bg-white/10 backdrop-blur-xl rounded-xl border border-white/10 p-5">
+                                    <p className="text-xs font-bold uppercase tracking-wide text-slate-400 mb-4">Status Publikasi</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {[
+                                            { value: 'all', label: 'Semua' },
+                                            { value: 'processed', label: 'Diterbitkan' },
+                                            { value: 'review', label: 'Dalam Review' },
+                                            { value: 'rejected', label: 'Ditolak' },
+                                        ].map(option => (
+                                            <button
+                                                key={option.value}
+                                                onClick={() => setFilterStatus(option.value)}
+                                                className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                                                    filterStatus === option.value
+                                                        ? 'bg-linear-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/30'
+                                                        : 'bg-white/10 text-slate-300 hover:bg-white/20 border border-white/10'
+                                                }`}
+                                            >
+                                                {option.label}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -263,51 +295,54 @@ const PublicPortalPage = () => {
             </header>
 
             {/* Main Content */}
-            <main className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-12">
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                {/* Header Section for Decisions List */}
+                {!isLoading && decisions.length > 0 && (
+                    <div className="relative overflow-hidden rounded-2xl bg-linear-to-r from-slate-800 via-slate-700 to-slate-800 p-6 shadow-xl shadow-slate-900/20 mb-8">
+                        {/* Background Pattern */}
+                        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjEiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-20" />
+                        <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 shadow-lg">
+                                    <FileText className="h-6 w-6 text-white" />
+                                </div>
+                                <div>
+                                    <div className="mb-1.5 inline-block px-2.5 py-1 rounded-full bg-white/10 text-white border border-white/20 backdrop-blur-sm text-[10px] font-bold uppercase tracking-wider">
+                                        Database Putusan
+                                    </div>
+                                    <h2 className="text-2xl font-bold text-white tracking-tight">
+                                        Daftar Putusan Terbaru
+                                    </h2>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="px-4 py-2.5 rounded-xl bg-emerald-500/20 border border-emerald-400/30 backdrop-blur-sm">
+                                    <p className="text-xs text-emerald-100 font-medium">
+                                        Total: <span className="font-bold text-white text-lg ml-1">{filteredDecisions.length}</span>
+                                        <span className="text-emerald-200 ml-1">putusan</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Loading State */}
                 {isLoading && (
-                    <div className="flex flex-col items-center justify-center py-16">
-                        <Loader2 className="h-8 w-8 animate-spin text-emerald-600 mb-4" />
-                        <p className="text-slate-600">Memuat putusan publik...</p>
+                    <div className="flex flex-col items-center justify-center py-20">
+                        <Loader2 className="h-10 w-10 animate-spin text-emerald-600 mb-4" />
+                        <p className="text-slate-600 font-medium">Memuat data publik...</p>
                     </div>
                 )}
 
-                {/* Empty State */}
-                {!isLoading && decisions.length === 0 && (
-                    <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white/50 py-16">
-                        <Gavel className="h-12 w-12 text-slate-300 mb-4" />
-                        <p className="text-lg font-semibold text-slate-900 mb-2">Belum ada putusan</p>
-                        <p className="text-slate-600">Putusan akan ditampilkan setelah dipublikasikan.</p>
-                    </div>
-                )}
-
-                {/* Results Count */}
-                {!isLoading && decisions.length > 0 && (
-                    <div className="mb-6 flex items-center justify-between">
-                        <p className="text-sm font-medium text-slate-600">
-                            Menampilkan <span className="font-bold text-slate-900">{filteredDecisions.length}</span> dari <span className="font-bold text-slate-900">{decisions.length}</span> putusan
-                        </p>
-                        {(searchQuery || filterStatus !== 'all') && (
-                            <button
-                                onClick={() => {
-                                    setSearchQuery('');
-                                    setFilterStatus('all');
-                                }}
-                                className="text-sm font-semibold text-emerald-600 hover:text-emerald-700"
-                            >
-                                Reset Filter
-                            </button>
-                        )}
-                    </div>
-                )}
-
-                {/* Decisions Grid */}
+                {/* Grid */}
                 {!isLoading && filteredDecisions.length > 0 && (
-                    <div className="grid gap-6">
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
                         {filteredDecisions.map((decision, idx) => (
                             <div
                                 key={decision.id}
-                                style={{ animation: `fadeIn 0.5s ease-out ${idx * 50}ms forwards`, opacity: 0 }}
+                                className="animate-in fade-in slide-in-from-bottom-4"
+                                style={{ animationDelay: `${idx * 50}ms`, animationFillMode: 'backwards' }}
                             >
                                 <DecisionCard decision={decision} />
                             </div>
@@ -315,37 +350,36 @@ const PublicPortalPage = () => {
                     </div>
                 )}
 
-                {/* No Results for Filters */}
+                {/* Empty States */}
+                {!isLoading && decisions.length === 0 && (
+                    <div className="text-center py-20">
+                        <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-slate-100 mb-6">
+                            <Gavel className="h-10 w-10 text-slate-300" />
+                        </div>
+                        <h3 className="text-xl font-bold text-slate-900 mb-2">Belum Ada Putusan</h3>
+                        <p className="text-slate-500">Saat ini belum ada data putusan yang dipublikasikan.</p>
+                    </div>
+                )}
+
                 {!isLoading && decisions.length > 0 && filteredDecisions.length === 0 && (
-                    <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white/50 py-16">
-                        <Search className="h-12 w-12 text-slate-300 mb-4" />
-                        <p className="text-lg font-semibold text-slate-900 mb-2">Tidak ada hasil</p>
-                        <p className="text-slate-600 mb-4">Coba ubah kriteria pencarian atau filter Anda.</p>
-                        <button
+                    <div className="text-center py-20 bg-white rounded-2xl border border-slate-200 border-dashed">
+                        <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-slate-50 mb-4">
+                            <Search className="h-8 w-8 text-slate-300" />
+                        </div>
+                        <h3 className="text-lg font-bold text-slate-900 mb-2">Tidak Ditemukan</h3>
+                        <p className="text-slate-500 mb-6">Penelusuran tidak memberikan hasil. Coba kata kunci lain atau reset filter.</p>
+                        <Button 
+                            variant="outline"
                             onClick={() => {
                                 setSearchQuery('');
                                 setFilterStatus('all');
                             }}
-                            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500"
                         >
-                            Reset Filter
-                        </button>
+                            Reset Pencarian
+                        </Button>
                     </div>
                 )}
             </main>
-
-            <style>{`
-                @keyframes fadeIn {
-                    from {
-                        opacity: 0;
-                        transform: translateY(10px);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: translateY(0);
-                    }
-                }
-            `}</style>
         </div>
     );
 };
