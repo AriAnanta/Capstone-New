@@ -40,28 +40,48 @@ const DecisionCard = ({ decision }) => {
         }
     };
 
+    const getStatusColor = (status) => {
+        switch(status) {
+            case 'processed': return 'from-emerald-500 to-teal-600';
+            case 'review': return 'from-amber-500 to-orange-600';
+            case 'rejected': return 'from-rose-500 to-red-600';
+            default: return 'from-slate-500 to-slate-600';
+        }
+    };
+
     return (
-        <Card className="group overflow-hidden border-slate-200/60 bg-white shadow-lg hover:shadow-xl transition-all duration-300">
+        <Card className="group overflow-hidden border-slate-200/60 bg-white shadow-lg hover:shadow-2xl hover:scale-[1.02] transition-all duration-300">
             <CardContent className="p-0">
-                {/* Header with Case Number and Status */}
-                <div className="bg-linear-to-r from-slate-50 to-emerald-50/30 px-6 py-4 border-b border-slate-100">
-                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                {/* Header with Case Number and Status - Enhanced with Colors */}
+                <div className={`relative overflow-hidden bg-linear-to-br ${getStatusColor(decision.status)} px-6 py-6 border-b border-white/20`}>
+                    {/* Animated background pattern */}
+                    <div className="absolute inset-0 bg-[linear-linear(45deg,transparent_25%,rgba(255,255,255,.05)_25%,rgba(255,255,255,.05)_50%,transparent_50%,transparent_75%,rgba(255,255,255,.05)_75%,rgba(255,255,255,.05))] bg-size-[20px_20px] animate-[move_2s_linear_infinite]"></div>
+                    
+                    {/* Decorative circles */}
+                    <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+                    <div className="absolute -bottom-6 -left-6 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
+                    
+                    <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div className="flex-1">
-                            <p className="text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1.5 flex items-center gap-1.5">
-                                <div className="h-1 w-1 rounded-full bg-emerald-500"></div>
-                                Nomor Perkara
-                            </p>
-                            <h2 className="text-2xl font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">
+                            <div className="flex items-center gap-2.5 mb-3">
+                                <div className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                                </div>
+                                <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-white/90 backdrop-blur-sm">
+                                    Nomor Perkara
+                                </p>
+                            </div>
+                            <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight leading-tight drop-shadow-lg">
                                 {decision.nomor_perkara}
                             </h2>
                         </div>
                         <Badge 
-                            variant={getStatusVariant(decision.status)} 
-                            className="px-4 py-1.5 text-xs font-semibold shrink-0"
+                            className="px-5 py-2.5 text-xs font-bold uppercase tracking-wider shrink-0 bg-white/20 text-white border-2 border-green-400 backdrop-blur-md shadow-xl hover:bg-white/30 transition-all"
                         >
-                            {decision.status === 'processed' && 'Published'}
-                            {decision.status === 'review' && 'In Review'}
-                            {decision.status === 'rejected' && 'Rejected'}
+                            {decision.status === 'processed' && '✓ Published'}
+                            {decision.status === 'review' && '⏱ In Review'}
+                            {decision.status === 'rejected' && '✕ Rejected'}
                             {!['processed', 'review', 'rejected'].includes(decision.status) && decision.status}
                         </Badge>
                     </div>
@@ -69,14 +89,14 @@ const DecisionCard = ({ decision }) => {
 
                 <div className="p-6 space-y-5">
                     {/* Court and Date Info */}
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
-                        <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg">
+                    <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
+                        <div className="flex items-center gap-2.5 bg-linear-to-br from-emerald-50 to-teal-50 px-4 py-2.5 rounded-xl border border-emerald-100 shadow-sm">
                             <Gavel className="h-4 w-4 text-emerald-600" />
-                            <span className="font-medium">{decision.pengadilan_asal}</span>
+                            <span className="font-semibold text-slate-700">{decision.pengadilan_asal}</span>
                         </div>
-                        <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg">
-                            <Calendar className="h-4 w-4 text-slate-400" />
-                            <span>{formatDate(decision.tanggal_masuk)}</span>
+                        <div className="flex items-center gap-2.5 bg-linear-to-br from-slate-50 to-slate-100 px-4 py-2.5 rounded-xl border border-slate-200 shadow-sm">
+                            <Calendar className="h-4 w-4 text-slate-500" />
+                            <span className="font-medium text-slate-600">{formatDate(decision.tanggal_masuk)}</span>
                         </div>
                     </div>
 
@@ -92,7 +112,7 @@ const DecisionCard = ({ decision }) => {
                                     <Badge 
                                         key={doc.id} 
                                         variant="secondary" 
-                                        className="bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 px-3 py-1"
+                                        className="bg-linear-to-r from-slate-100 to-slate-200 text-slate-700 hover:from-slate-200 hover:to-slate-300 border border-slate-300 px-3 py-1.5 font-medium shadow-sm"
                                     >
                                         {doc.jenis_dokumen}
                                     </Badge>
@@ -103,7 +123,7 @@ const DecisionCard = ({ decision }) => {
 
                     {/* Public Summary */}
                     {publicSummary ? (
-                        <div className="rounded-xl border-2 border-emerald-100 bg-linear-to-br from-emerald-50/50 to-teal-50/30 p-6 space-y-3">
+                        <div className="rounded-xl border-2 border-emerald-200 bg-linear-to-br from-emerald-50/80 via-teal-50/50 to-cyan-50/30 p-6 space-y-3 shadow-inner">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2.5">
                                     <div className="relative flex h-2.5 w-2.5">
@@ -112,7 +132,7 @@ const DecisionCard = ({ decision }) => {
                                     </div>
                                     <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">Ringkasan Publik</span>
                                 </div>
-                                <span className="text-xs font-medium text-slate-500 bg-white/50 px-2 py-1 rounded">{formatDate(publicSummary.created_at)}</span>
+                                <span className="text-xs font-medium text-slate-500 bg-white/70 px-3 py-1 rounded-full shadow-sm">{formatDate(publicSummary.created_at)}</span>
                             </div>
                             <p className="text-sm leading-relaxed text-slate-700 whitespace-pre-line">{displayText}</p>
                             {shouldTruncate && (
@@ -128,9 +148,9 @@ const DecisionCard = ({ decision }) => {
                             )}
                         </div>
                     ) : (
-                        <div className="rounded-xl bg-slate-50 border-2 border-dashed border-slate-200 p-6 text-center">
-                            <Lock className="h-8 w-8 mx-auto text-slate-300 mb-2" />
-                            <p className="text-sm text-slate-500 font-medium">
+                        <div className="rounded-xl bg-linear-to-br from-slate-50 to-slate-100 border-2 border-dashed border-slate-300 p-6 text-center">
+                            <Lock className="h-8 w-8 mx-auto text-slate-400 mb-2" />
+                            <p className="text-sm text-slate-600 font-medium">
                                 Ringkasan publik belum tersedia untuk perkara ini
                             </p>
                         </div>
@@ -185,8 +205,8 @@ const PublicPortalPage = () => {
                             {/* Official Logo & Branding */}
                             <div className="flex items-start gap-5 mb-6">
                                 <div className="relative shrink-0">
-                                    <div className="h-16 w-16 md:h-20 md:w-20 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
-                                        <Scale className="h-9 w-9 md:h-11 md:w-11 text-white" />
+                                    <div className="h-16 w-16 rounded-2xl bg-white/95 flex items-center justify-center shadow-lg shadow-emerald-500/30 group p-2">
+                                        <img src="/images/logo-pta.png" alt="Logo PTA Bandung" className="h-full w-full object-contain" />
                                     </div>
                                     <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-yellow-400 ring-2 ring-white flex items-center justify-center">
                                         <span className="h-2 w-2 rounded-full bg-white animate-pulse"></span>
@@ -231,7 +251,6 @@ const PublicPortalPage = () => {
                             ) : (
                                 <Button className="bg-white text-emerald-700 hover:bg-emerald-50 shadow-xl shadow-black/10 border-0 font-semibold gap-2" asChild>
                                     <Link to="/login">
-                                        {/* <Lock className="h-4 w-4" /> */}
                                         Log out
                                     </Link>
                                 </Button>
@@ -266,7 +285,7 @@ const PublicPortalPage = () => {
                         {showFilters && (
                             <div className="mt-4 animate-in slide-in-from-top-2">
                                 <div className="bg-white/10 backdrop-blur-xl rounded-xl border border-white/10 p-5">
-                                    <p className="text-xs font-bold uppercase tracking-wide text-slate-400 mb-4">Status Publikasi</p>
+                                    <p className="text-xs font-bold uppercase tracking-wide text-white/70 mb-4">Status Publikasi</p>
                                     <div className="flex flex-wrap gap-2">
                                         {[
                                             { value: 'all', label: 'Semua' },
@@ -280,7 +299,7 @@ const PublicPortalPage = () => {
                                                 className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                                                     filterStatus === option.value
                                                         ? 'bg-linear-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/30'
-                                                        : 'bg-white/10 text-slate-300 hover:bg-white/20 border border-white/10'
+                                                        : 'bg-white/10 text-white/90 hover:bg-white/20 border border-white/10'
                                                 }`}
                                             >
                                                 {option.label}
@@ -380,6 +399,17 @@ const PublicPortalPage = () => {
                     </div>
                 )}
             </main>
+
+            <style>{`
+                @keyframes move {
+                    0% {
+                        background-position: 0 0;
+                    }
+                    100% {
+                        background-position: 20px 20px;
+                    }
+                }
+            `}</style>
         </div>
     );
 };

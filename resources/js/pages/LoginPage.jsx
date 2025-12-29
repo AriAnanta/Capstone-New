@@ -71,12 +71,12 @@ const LoginPage = () => {
                             {/* Header */}
                             <div className="space-y-4 animate-fade-in-up" style={{ animationDuration: '0.6s' }}>
                                 <div className="flex items-center gap-3 mb-8">
-                                    <div className="h-12 w-12 rounded-2xl bg-linear-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/30 group">
-                                        <Scale className="h-6 w-6 text-white" />
+                                    <div className="h-16 w-16 rounded-2xl bg-white/95 flex items-center justify-center shadow-lg shadow-emerald-500/30 group p-2">
+                                        <img src="/images/logo-pta.png" alt="Logo PTA Bandung" className="h-full w-full object-contain" />
                                     </div>
                                     <div>
-                                        <h1 className="text-xl font-bold text-white">Sistem Putusan</h1>
-                                        <p className="text-xs font-medium text-emerald-400">PTA Bandung</p>
+                                        <h1 className="text-xl font-bold text-white">Sistem Digitalisasi</h1>
+                                        <p className="text-xs font-medium text-emerald-400">Pengadilan Tinggi Agama Bandung</p>
                                     </div>
                                 </div>
 
@@ -85,7 +85,7 @@ const LoginPage = () => {
                                         Selamat Datang
                                     </h2>
                                     <p className="text-base text-slate-400 leading-relaxed">
-                                        Masukkan kredensial Anda untuk mengakses dashboard manajemen perkara terintegrasi.
+                                        Masukkan kredensial Anda untuk mengakses dashboard Sistem Digitalisasi.
                                     </p>
                                 </div>
                             </div>

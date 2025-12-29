@@ -49,8 +49,8 @@ const Sidebar = ({ open, setOpen }) => {
                 {/* Header with Official PTA Bandung Branding */}
                 <div className="px-6 py-8">
                     <div className="flex items-center gap-4">
-                        <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-yellow-500 to-amber-600 shadow-lg shadow-yellow-500/20 ring-1 ring-white/10">
-                            <Scale className="h-7 w-7 text-white" />
+                        <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/95 shadow-lg shadow-yellow-500/20 ring-1 ring-white/10 p-2">
+                            <img src="/images/logo-pta.png" alt="Logo PTA Bandung" className="h-full w-full object-contain" />
                             <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-emerald-400 ring-2 ring-slate-900 flex items-center justify-center">
                                 <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse"></span>
                             </div>
