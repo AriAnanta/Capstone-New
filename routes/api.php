@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AnonymizationController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\LegalAdvisorController;
@@ -39,6 +40,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/{id}', [OcrOnlyController::class, 'destroy']);
         Route::post('/{id}/reprocess', [OcrOnlyController::class, 'reprocess']);
         Route::get('/{id}/download', [OcrOnlyController::class, 'download']);
+    });
+
+    // Anonymization routes (khusus panitera)
+    Route::middleware(['role:panitera'])->prefix('anonymization')->group(function () {
+        Route::get('/case-types', [AnonymizationController::class, 'caseTypes']);
+        Route::post('/process-file', [AnonymizationController::class, 'processFile']);
+        Route::post('/process-text', [AnonymizationController::class, 'processText']);
+        Route::post('/download', [AnonymizationController::class, 'download']);
     });
 
     Route::middleware('role:panitera,hakim')->group(function () {

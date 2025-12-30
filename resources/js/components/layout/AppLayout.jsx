@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { 
     FileText, LayoutDashboard, LogOut, Settings, Scale, 
-    UploadCloud, Menu, X, ChevronDown, Zap, BookOpen, Search, ScanText
+    UploadCloud, Menu, X, ChevronDown, Zap, BookOpen, Search, ScanText, Shield
 } from 'lucide-react';
 import { logout as logoutRequest } from '@/api/auth';
 import { useAuthStore } from '@/store/authStore';
@@ -17,6 +17,7 @@ const navItems = [
     { type: 'spacer' },
     { to: '/search', label: 'Pencarian', icon: Search, roles: ['panitera'] },
     { to: '/ocr-only', label: 'OCR Tools', icon: ScanText, roles: ['panitera'] },
+    { to: '/anonymization', label: 'Anonimisasi', icon: Shield, roles: ['panitera'] },
     { to: '/documents/upload', label: 'Ringkas Dokumen', icon: UploadCloud, roles: ['panitera'] },
     { to: '/settings', label: 'Pengaturan', icon: Settings, roles: ['panitera'] },
 ];

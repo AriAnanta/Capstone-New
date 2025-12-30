@@ -15,6 +15,7 @@ import SettingsPage from '@/pages/SettingsPage';
 import LegalAdvisorPage from '@/pages/LegalAdvisorPage';
 import AdvancedSearchPage from '@/pages/AdvancedSearchPage';
 import OcrOnlyPage from '@/pages/OcrOnlyPage';
+import AnonymizationPage from '@/pages/AnonymizationPage';
 import { useAuthStore } from '@/store/authStore';
 
 const ProtectedRoute = ({ allowed, redirectTo = '/public/putusan' }) => {
@@ -56,6 +57,7 @@ export const AppRouter = () => (
                     <Route element={<ProtectedRoute allowed={['panitera']} />}>
                         <Route path="search" element={<AdvancedSearchPage />} />
                         <Route path="ocr-only" element={<OcrOnlyPage />} />
+                        <Route path="anonymization" element={<AnonymizationPage />} />
                         <Route path="cases/new" element={<CaseCreatePage />} />
                         <Route path="cases/:caseId/edit" element={<CaseEditPage />} />
                         <Route path="documents/upload" element={<DocumentUploadPage />} />
