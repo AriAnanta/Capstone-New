@@ -41,7 +41,9 @@ class GeminiClient
     protected function callGemini(string $prompt, string $taskType): array
     {
         $model = config('services.gemini.model', 'gemini-1.5-flash');
-        $timeout = (int) config('services.gemini.timeout', 60);
+        $timeout = (int) config('services.gemini.timeout', 30); // Reduced timeout
+        $maxRetries = (int) config('services.gemini.max_retries', 2);
+        $retryDelay = (int) config('services.gemini.retry_delay', 1000);
         $apiKeys = $this->getApiKeys();
 
         if (empty($apiKeys)) {
@@ -51,34 +53,78 @@ class GeminiClient
 
         $attempted = [];
         $count = count($apiKeys);
+        $lastError = null;
 
         for ($offset = 0; $offset < $count; $offset++) {
             $keyIndex = ($this->keyCursor + $offset) % $count;
             $apiKey = $apiKeys[$keyIndex];
             $attempted[] = $keyIndex;
 
-            try {
-                $response = $this->sendRequest($model, $apiKey, $prompt, $timeout);
+            // Retry for each key
+            for ($retry = 0; $retry <= $maxRetries; $retry++) {
+                try {
+                    $response = $this->sendRequest($model, $apiKey, $prompt, $timeout);
 
-                if ($response->successful()) {
-                    $this->keyCursor = ($keyIndex + 1) % $count;
-                    return $this->extractPayload($response->json());
+                    if ($response->successful()) {
+                        $this->keyCursor = ($keyIndex + 1) % $count;
+                        $payload = $this->extractPayload($response->json());
+                        
+                        // Log success
+                        Log::info('Gemini API berhasil', [
+                            'key_index' => $keyIndex,
+                            'task_type' => $taskType,
+                            'retry_attempt' => $retry,
+                            'response_size' => strlen(json_encode($payload)),
+                        ]);
+                        
+                        return $payload;
+                    }
+
+                    Log::warning('Gemini API gagal untuk key tertentu', [
+                        'key_index' => $keyIndex,
+                        'retry_attempt' => $retry,
+                        'status' => $response->status(),
+                        'task_type' => $taskType,
+                    ]);
+                    
+                    $lastError = 'HTTP ' . $response->status();
+                    
+                } catch (ConnectionException $exception) {
+                    $lastError = $exception->getMessage();
+                    
+                    Log::warning('Gemini API timeout/connection error', [
+                        'key_index' => $keyIndex,
+                        'retry_attempt' => $retry,
+                        'task_type' => $taskType,
+                        'message' => $exception->getMessage(),
+                        'timeout' => $timeout,
+                    ]);
+                } catch (\Throwable $exception) {
+                    $lastError = $exception->getMessage();
+                    
+                    Log::error('Gemini API unexpected error', [
+                        'key_index' => $keyIndex,
+                        'retry_attempt' => $retry,
+                        'task_type' => $taskType,
+                        'message' => $exception->getMessage(),
+                        'trace' => $exception->getTraceAsString(),
+                    ]);
                 }
-
-                Log::warning('Gemini API gagal untuk key tertentu', [
-                    'key_index' => $keyIndex,
-                    'status' => $response->status(),
-                    'body' => $response->json(),
-                ]);
-            } catch (ConnectionException $exception) {
-                Log::warning('Gemini API timeout/connection error', [
-                    'key_index' => $keyIndex,
-                    'message' => $exception->getMessage(),
-                ]);
+                
+                // Wait before retry (except for last attempt)
+                if ($retry < $maxRetries) {
+                    usleep($retryDelay * 1000); // Convert to microseconds
+                }
             }
         }
 
-        Log::error('Semua Gemini API key gagal dipakai', ['attempted_indexes' => $attempted]);
+        Log::error('Semua Gemini API key gagal dipakai', [
+            'attempted_indexes' => $attempted,
+            'task_type' => $taskType,
+            'total_retries' => $maxRetries * $count,
+            'last_error' => $lastError,
+            'timeout_setting' => $timeout,
+        ]);
 
         return [];
     }
@@ -88,7 +134,8 @@ class GeminiClient
     $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
 
     return Http::timeout($timeout)
-        ->retry(1, 500)
+        ->connectTimeout(10) // 10 second connect timeout
+        ->retry(1, 200) // Reduced retry delay
         ->post($endpoint, [
             'contents' => [
                 [
@@ -108,12 +155,30 @@ class GeminiClient
         $text = Arr::get($data, 'candidates.0.content.parts.0.text');
 
         if (! $text) {
+            Log::warning('Gemini response tidak memiliki text content', ['data' => $data]);
             return [];
         }
 
+        // Log raw text untuk debugging
+        Log::debug('Gemini raw text response', [
+            'text_preview' => substr($text, 0, 200),
+            'text_length' => strlen($text),
+        ]);
+
         $decoded = $this->decodeGeminiText($text);
 
-        return is_array($decoded) ? $decoded : ['summary' => $text];
+        if (is_array($decoded)) {
+            Log::debug('Gemini JSON successfully decoded', ['keys' => array_keys($decoded)]);
+            return $decoded;
+        }
+        
+        // Fallback: wrap text in summary if JSON parsing fails
+        Log::warning('Gemini JSON parsing failed, falling back to text wrapper', [
+            'text_preview' => substr($text, 0, 100),
+            'contains_json_markers' => str_contains($text, '{') && str_contains($text, '}'),
+        ]);
+        
+        return ['summary' => $text];
     }
 
     protected function decodeGeminiText(string $text): ?array
@@ -121,12 +186,36 @@ class GeminiClient
         $json = $this->pluckJsonString($text);
 
         if (! $json) {
+            Log::debug('No JSON found in Gemini text', ['text_preview' => substr($text, 0, 100)]);
             return null;
         }
 
+        // Try to decode JSON
         $decoded = json_decode($json, true);
-
-        return json_last_error() === JSON_ERROR_NONE ? $decoded : null;
+        $jsonError = json_last_error();
+        
+        if ($jsonError === JSON_ERROR_NONE) {
+            return $decoded;
+        }
+        
+        // Log JSON parsing error
+        Log::warning('JSON decode failed in Gemini response', [
+            'json_error' => json_last_error_msg(),
+            'json_preview' => substr($json, 0, 200),
+            'json_length' => strlen($json),
+        ]);
+        
+        // Try to fix common JSON issues
+        $fixedJson = $this->attemptJsonFix($json);
+        if ($fixedJson !== $json) {
+            $decoded = json_decode($fixedJson, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                Log::info('JSON successfully fixed', ['original_preview' => substr($json, 0, 100)]);
+                return $decoded;
+            }
+        }
+        
+        return null;
     }
 
     protected function pluckJsonString(string $text): ?string
@@ -148,6 +237,30 @@ class GeminiClient
         }
 
         return null;
+    }
+    
+    protected function attemptJsonFix(string $json): string
+    {
+        // Common fixes for malformed JSON from LLMs
+        $fixed = $json;
+        
+        // Remove trailing commas
+        $fixed = preg_replace('/,\s*}/', '}', $fixed);
+        $fixed = preg_replace('/,\s*]/', ']', $fixed);
+        
+        // Fix unescaped quotes in strings (basic attempt)
+        $fixed = preg_replace('/"([^"]*?)"([^":,}\]]*?)"/', '"$1\\"$2"', $fixed);
+        
+        // Ensure proper closing
+        if (substr_count($fixed, '{') > substr_count($fixed, '}')) {
+            $fixed .= str_repeat('}', substr_count($fixed, '{') - substr_count($fixed, '}'));
+        }
+        
+        if (substr_count($fixed, '[') > substr_count($fixed, ']')) {
+            $fixed .= str_repeat(']', substr_count($fixed, '[') - substr_count($fixed, ']'));
+        }
+        
+        return $fixed;
     }
 
     protected function getApiKeys(): array

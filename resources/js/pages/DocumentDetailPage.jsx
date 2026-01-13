@@ -6,7 +6,8 @@ import { useAuthStore } from '@/store/authStore';
 import { apiClient } from '@/api/client';
 import { 
     FileText, Download, Printer, RefreshCw, Edit, ArrowLeft, 
-    CheckCircle2, Circle, BrainCircuit, Sparkles, Copy, Check, Activity 
+    CheckCircle2, Circle, BrainCircuit, Sparkles, Copy, Check, Activity,
+    AlertTriangle, XCircle, Clock, Wifi, WifiOff
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -19,11 +20,49 @@ const SUMMARY_TYPES = [
 ];
 
 /**
+ * Extract summary dari format JSON jika ada
+ */
+const extractSummaryText = (text) => {
+    if (!text) return '';
+    
+    // Cek jika text dimulai dengan JSON marker tapi tidak complete
+    if (typeof text === 'string' && text.startsWith('{"summary":"') && !text.includes('"}')) {
+        // Kemungkinan JSON yang terpotong atau malformed
+        console.warn('Detected malformed JSON in summary:', text.substring(0, 100));
+        return 'Terjadi kesalahan dalam memproses ringkasan. Silakan coba proses ulang dokumen.';
+    }
+    
+    // Cek apakah text adalah JSON
+    try {
+        const parsed = JSON.parse(text);
+        if (parsed.summary) {
+            return parsed.summary;
+        }
+        if (typeof parsed === 'string') {
+            return parsed;
+        }
+    } catch (e) {
+        // Jika parsing gagal dan text mengandung JSON markers, anggap sebagai error
+        if (text.includes('{"') || text.includes('"}') || text.includes('"summary"')) {
+            console.warn('Failed to parse JSON summary:', e.message);
+            return 'Terjadi kesalahan dalam format ringkasan. Silakan coba proses ulang dokumen.';
+        }
+        // Bukan JSON, return text biasa
+    }
+    
+    return text;
+};
+
+/**
  * Membersihkan format Markdown dan mengkonversi ke plain text yang rapi
  */
 const cleanMarkdownText = (text) => {
     if (!text) return '';
-    return text
+    
+    // Extract dari JSON jika ada
+    const extractedText = extractSummaryText(text);
+    
+    return extractedText
         .replace(/\*\*([^*]+)\*\*/g, '$1')
         .replace(/__([^_]+)__/g, '$1')
         .replace(/\*([^*]+)\*/g, '$1')
@@ -78,6 +117,62 @@ const DetailRow = ({ label, value }) => (
     </div>
 );
 
+const SummaryContent = ({ text, summaryId, expanded, onToggle }) => {
+    // Cek apakah text dalam format JSON dan extract
+    let isJsonFormat = false;
+    let confidence = null;
+    try {
+        const parsed = JSON.parse(text);
+        if (parsed.summary) {
+            isJsonFormat = true;
+            confidence = parsed.confidence;
+        }
+    } catch (e) {
+        // Bukan JSON
+    }
+    
+    const cleanedText = cleanMarkdownText(text);
+    const MAX_LENGTH = 400;
+    const shouldTruncate = cleanedText.length > MAX_LENGTH;
+    const displayText = (shouldTruncate && !expanded) ? cleanedText.slice(0, MAX_LENGTH) + '...' : cleanedText;
+    
+    return (
+        <div className="space-y-3">
+            {isJsonFormat && confidence !== null && (
+                <div className="flex items-center gap-2 text-xs text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg w-fit">
+                    <BrainCircuit className="h-3.5 w-3.5" />
+                    <span className="font-medium">AI Generated • Confidence: {Math.round(confidence * 100)}%</span>
+                </div>
+            )}
+            <FormattedText text={displayText} />
+            {shouldTruncate && (
+                <button
+                    onClick={onToggle}
+                    className="text-sm font-medium text-emerald-600 hover:text-emerald-700 flex items-center gap-1.5 mt-3 transition-colors"
+                >
+                    {expanded ? (
+                        <>
+                            <span>Tampilkan Lebih Sedikit</span>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                            </svg>
+                        </>
+                    ) : (
+                        <>
+                            <span>Lihat Selengkapnya</span>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </>
+                    )}
+                </button>
+            )}
+        </div>
+    );
+};
+
+
+
 const DocumentDetailPage = () => {
     const { documentId } = useParams();
     const [searchParams] = useSearchParams();
@@ -91,6 +186,7 @@ const DocumentDetailPage = () => {
     const [copied, setCopied] = useState(false);
     const [downloading, setDownloading] = useState(false);
     const [highlightEffect, setHighlightEffect] = useState(false);
+    const [expandedSummaries, setExpandedSummaries] = useState({});
 
     const canManageSummaries = role === 'panitera';
     const canDownloadOutputs = role === 'hakim';
@@ -142,11 +238,42 @@ const DocumentDetailPage = () => {
         setTimeout(() => setCopied(false), 2000);
     };
 
-    const pipelineSteps = useMemo(() => [
-        { key: 'ocr', label: 'Extraksi OCR', icon: FileText, done: Boolean(document?.teks_ocr) },
-        { key: 'summary', label: 'AI Summarization', icon: BrainCircuit, done: Boolean(document?.summaries?.length) },
-        { key: 'gemini', label: 'Analisis Hukum', icon: Sparkles, done: Boolean(document?.recommendations?.length) },
-    ], [document]);
+    const pipelineSteps = useMemo(() => {
+        if (!document) return [];
+        
+        // Check if processing has been stuck for too long
+        const uploadTime = new Date(document.tanggal_upload || document.created_at);
+        const now = new Date();
+        const timeDiff = (now - uploadTime) / (1000 * 60); // in minutes
+        const isStale = timeDiff > 15; // Consider stale if more than 15 minutes
+        
+        return [
+            { 
+                key: 'ocr', 
+                label: 'Extraksi OCR', 
+                icon: FileText, 
+                done: Boolean(document?.teks_ocr),
+                error: isStale && !document?.teks_ocr,
+                processing: !document?.teks_ocr && !isStale
+            },
+            { 
+                key: 'summary', 
+                label: 'AI Summarization', 
+                icon: BrainCircuit, 
+                done: Boolean(document?.summaries?.length),
+                error: isStale && document?.teks_ocr && !document?.summaries?.length,
+                processing: document?.teks_ocr && !document?.summaries?.length && !isStale
+            },
+            { 
+                key: 'gemini', 
+                label: 'Analisis Hukum', 
+                icon: Sparkles, 
+                done: Boolean(document?.recommendations?.length),
+                error: isStale && document?.summaries?.length && !document?.recommendations?.length,
+                processing: document?.summaries?.length && !document?.recommendations?.length && !isStale
+            },
+        ];
+    }, [document]);
 
     if (isLoading) return (
         <div className="flex bg-slate-50 min-h-screen items-center justify-center">
@@ -216,9 +343,18 @@ const DocumentDetailPage = () => {
                                     <CardTitle className="text-base font-bold text-slate-900">Status Pemrosesan</CardTitle>
                                 </div>
                                 {(!document.teks_ocr || !document.summaries?.length || !document.recommendations?.length) && (
-                                    <div className="flex items-center gap-1.5 text-xs font-semibold text-blue-700 bg-blue-100 px-3 py-1.5 rounded-full animate-pulse shadow-lg shadow-blue-200/50">
-                                        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                                        <span>AUTO-REFRESH (3s)</span>
+                                    <div className="flex items-center gap-1.5 text-xs font-semibold">
+                                        {pipelineSteps.some(step => step.error) ? (
+                                            <div className="bg-red-100 text-red-700 px-3 py-1.5 rounded-full flex items-center gap-1.5">
+                                                <WifiOff className="h-3.5 w-3.5" />
+                                                <span>KONEKSI BERMASALAH</span>
+                                            </div>
+                                        ) : (
+                                            <div className="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full animate-pulse shadow-lg shadow-blue-200/50">
+                                                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                                                <span>AUTO-REFRESH (3s)</span>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -230,17 +366,68 @@ const DocumentDetailPage = () => {
                                         "flex h-8 w-8 items-center justify-center rounded-full border transition-all duration-300",
                                         step.done 
                                             ? "bg-emerald-100 border-emerald-200 text-emerald-600" 
+                                            : step.error
+                                            ? "bg-red-100 border-red-200 text-red-600"
+                                            : step.processing
+                                            ? "bg-blue-100 border-blue-200 text-blue-600"
                                             : "bg-slate-50 border-slate-200 text-slate-300"
                                     )}>
-                                        <step.icon className="h-4 w-4" />
+                                        {step.error ? (
+                                            <AlertTriangle className="h-4 w-4" />
+                                        ) : step.processing ? (
+                                            <Clock className="h-4 w-4 animate-pulse" />
+                                        ) : (
+                                            <step.icon className="h-4 w-4" />
+                                        )}
                                     </div>
                                     <div className="flex-1">
-                                        <p className={clsx("text-sm font-medium transition-colors", step.done ? "text-slate-900" : "text-slate-400")}>{step.label}</p>
-                                        {!step.done && <p className="text-xs text-slate-400 mt-0.5">Sedang diproses...</p>}
+                                        <p className={clsx(
+                                            "text-sm font-medium transition-colors", 
+                                            step.done ? "text-slate-900" : 
+                                            step.error ? "text-red-700" :
+                                            step.processing ? "text-blue-700" :
+                                            "text-slate-400"
+                                        )}>
+                                            {step.label}
+                                        </p>
+                                        {step.error && (
+                                            <p className="text-xs text-red-600 mt-0.5">Gagal - Periksa koneksi atau coba proses ulang</p>
+                                        )}
+                                        {step.processing && (
+                                            <p className="text-xs text-blue-600 mt-0.5">Sedang diproses...</p>
+                                        )}
+                                        {!step.done && !step.error && !step.processing && (
+                                            <p className="text-xs text-slate-400 mt-0.5">Menunggu...</p>
+                                        )}
                                     </div>
-                                    {step.done ? <CheckCircle2 className="h-5 w-5 text-emerald-500" /> : <Circle className="h-5 w-5 text-slate-200" />}
+                                    <div className="flex items-center gap-2">
+                                        {step.done ? (
+                                            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                                        ) : step.error ? (
+                                            <XCircle className="h-5 w-5 text-red-500" />
+                                        ) : step.processing ? (
+                                            <RefreshCw className="h-5 w-5 text-blue-500 animate-spin" />
+                                        ) : (
+                                            <Circle className="h-5 w-5 text-slate-200" />
+                                        )}
+                                    </div>
                                 </div>
                             ))}
+                            
+                            {/* Show retry button if there are errors and user can manage summaries */}
+                            {pipelineSteps.some(step => step.error) && canManageSummaries && (
+                                <div className="pt-4 border-t border-slate-100">
+                                    <Button 
+                                        onClick={handleReprocess} 
+                                        disabled={reprocessDocument.isPending}
+                                        size="sm"
+                                        className="w-full bg-red-600 hover:bg-red-700 text-white"
+                                    >
+                                        <RefreshCw className={clsx("mr-2 h-4 w-4", reprocessDocument.isPending && "animate-spin")} />
+                                        Coba Proses Ulang
+                                    </Button>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
 
@@ -290,13 +477,45 @@ const DocumentDetailPage = () => {
                                         </Badge>
                                         <span className="text-xs text-slate-400 font-medium">{formatDate(summary.created_at)}</span>
                                     </div>
-                                    <FormattedText text={summary.ringkasan} />
+                                    <SummaryContent 
+                                        text={summary.ringkasan}
+                                        summaryId={summary.id}
+                                        expanded={expandedSummaries[summary.id]}
+                                        onToggle={() => setExpandedSummaries(prev => ({ ...prev, [summary.id]: !prev[summary.id] }))}
+                                    />
                                 </div>
                             ))}
                             {(!document.summaries?.length) && (
-                                <div className="text-center py-8 text-slate-500 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                                    <BrainCircuit className="h-8 w-8 mx-auto text-slate-300 mb-2" />
-                                    <p className="text-sm">Belum ada ringkasan yang dihasilkan.</p>
+                                <div className="text-center py-8 rounded-xl border border-dashed">
+                                    {pipelineSteps.find(s => s.key === 'summary')?.error ? (
+                                        <div className="text-red-500 bg-red-50 border-red-200">
+                                            <AlertTriangle className="h-8 w-8 mx-auto text-red-400 mb-2" />
+                                            <p className="text-sm font-medium mb-1">Gagal Membuat Ringkasan</p>
+                                            <p className="text-xs text-red-600">Sistem mengalami masalah koneksi ke AI service. Silakan coba proses ulang.</p>
+                                            {canManageSummaries && (
+                                                <Button 
+                                                    onClick={handleReprocess} 
+                                                    disabled={reprocessDocument.isPending}
+                                                    size="sm"
+                                                    className="mt-3 bg-red-600 hover:bg-red-700 text-white"
+                                                >
+                                                    <RefreshCw className={clsx("mr-2 h-4 w-4", reprocessDocument.isPending && "animate-spin")} />
+                                                    Coba Lagi
+                                                </Button>
+                                            )}
+                                        </div>
+                                    ) : pipelineSteps.find(s => s.key === 'summary')?.processing ? (
+                                        <div className="text-blue-500 bg-blue-50 border-blue-200">
+                                            <RefreshCw className="h-8 w-8 mx-auto text-blue-400 mb-2 animate-spin" />
+                                            <p className="text-sm font-medium">Sedang Membuat Ringkasan...</p>
+                                            <p className="text-xs text-blue-600">AI sedang menganalisis dokumen. Mohon tunggu sebentar.</p>
+                                        </div>
+                                    ) : (
+                                        <div className="text-slate-500 bg-slate-50 border-slate-200">
+                                            <BrainCircuit className="h-8 w-8 mx-auto text-slate-300 mb-2" />
+                                            <p className="text-sm">Belum ada ringkasan yang dihasilkan.</p>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </CardContent>
@@ -317,13 +536,11 @@ const DocumentDetailPage = () => {
                                         {(rec.daftar_pasal ?? []).map((pasal, i) => (
                                             <div key={i} className="bg-linear-to-br from-white to-indigo-50/30 rounded-xl p-5 border border-indigo-100/60 shadow-sm hover:shadow-lg hover:border-indigo-200 transition-all duration-300 group">
                                                 {/* Header dengan Badge */}
-                                                <div className="flex items-start justify-between mb-4 pb-3 border-b border-indigo-100/50">
-                                                    <div className="flex-1 mr-3">
-                                                        <h3 className="font-bold text-slate-800 text-sm leading-tight mb-1 group-hover:text-indigo-700 transition-colors">
-                                                            {pasal.nama}
-                                                        </h3>
-                                                    </div>
-                                                    <Badge variant="outline" className="font-mono text-xs shrink-0 bg-indigo-50/80 border-indigo-200 text-indigo-700 px-2.5 py-1">
+                                                <div className="mb-4 pb-3 border-b border-indigo-100/50 space-y-2">
+                                                    <h3 className="font-bold text-slate-800 text-sm leading-snug group-hover:text-indigo-700 transition-colors wrap-break-word">
+                                                        {pasal.nama}
+                                                    </h3>
+                                                    <Badge variant="outline" className="font-mono text-xs bg-indigo-50/80 border-indigo-200 text-indigo-700 px-2.5 py-1 inline-block">
                                                         {pasal.pasal ? `Pasal ${pasal.pasal}` : 'Tidak disebutkan'}
                                                     </Badge>
                                                 </div>
@@ -355,9 +572,36 @@ const DocumentDetailPage = () => {
                                 </div>
                             ))}
                             {(!document.recommendations?.length) && (
-                                <div className="text-center py-8 text-slate-500 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                                    <Sparkles className="h-8 w-8 mx-auto text-slate-300 mb-2" />
-                                    <p className="text-sm">Belum ada rekomendasi hukum yang dihasilkan.</p>
+                                <div className="text-center py-8 rounded-xl border border-dashed">
+                                    {pipelineSteps.find(s => s.key === 'gemini')?.error ? (
+                                        <div className="text-red-500 bg-red-50 border-red-200">
+                                            <AlertTriangle className="h-8 w-8 mx-auto text-red-400 mb-2" />
+                                            <p className="text-sm font-medium mb-1">Gagal Menganalisis Hukum</p>
+                                            <p className="text-xs text-red-600">Sistem mengalami timeout atau masalah koneksi ke Gemini AI. Silakan coba proses ulang.</p>
+                                            {canManageSummaries && (
+                                                <Button 
+                                                    onClick={handleReprocess} 
+                                                    disabled={reprocessDocument.isPending}
+                                                    size="sm"
+                                                    className="mt-3 bg-red-600 hover:bg-red-700 text-white"
+                                                >
+                                                    <RefreshCw className={clsx("mr-2 h-4 w-4", reprocessDocument.isPending && "animate-spin")} />
+                                                    Coba Lagi
+                                                </Button>
+                                            )}
+                                        </div>
+                                    ) : pipelineSteps.find(s => s.key === 'gemini')?.processing ? (
+                                        <div className="text-blue-500 bg-blue-50 border-blue-200">
+                                            <RefreshCw className="h-8 w-8 mx-auto text-blue-400 mb-2 animate-spin" />
+                                            <p className="text-sm font-medium">Sedang Menganalisis Hukum...</p>
+                                            <p className="text-xs text-blue-600">AI sedang mencari pasal dan peraturan yang relevan. Mohon tunggu sebentar.</p>
+                                        </div>
+                                    ) : (
+                                        <div className="text-slate-500 bg-slate-50 border-slate-200">
+                                            <Sparkles className="h-8 w-8 mx-auto text-slate-300 mb-2" />
+                                            <p className="text-sm">Belum ada rekomendasi hukum yang dihasilkan.</p>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </CardContent>

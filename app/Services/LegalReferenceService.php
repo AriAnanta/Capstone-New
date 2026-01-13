@@ -82,7 +82,25 @@ PROMPT;
                     }
                     return $v;
                 }, $response ?? []),
+                'prompt_length' => strlen($prompt),
+                'has_candidates' => !empty($candidates->toArray()),
+                'response_is_empty' => empty($response),
             ]);
+            
+            // Create a fallback recommendation with error info
+            LlmRecommendation::create([
+                'perkara_id' => $perkara->id,
+                'document_id' => $document?->id,
+                'daftar_pasal' => [],
+                'pertimbangan_llm' => 'Sistem tidak dapat menganalisis dokumen karena masalah koneksi atau timeout pada AI service. Silakan coba proses ulang atau hubungi administrator.',
+                'meta' => [
+                    'model' => config('services.gemini.model'),
+                    'status' => 'failed',
+                    'error_type' => 'gemini_timeout_or_empty_response',
+                    'timestamp' => now()->toISOString(),
+                ],
+            ]);
+            
             return;
         }
 
@@ -123,6 +141,22 @@ PROMPT;
             // Jika articles adalah array dan tidak kosong
             if (is_array($articles) && !empty($articles)) {
                 return $articles;
+            }
+        }
+
+        // Handle case where entire response might be a JSON string
+        if (count($response) === 1) {
+            $firstValue = array_values($response)[0];
+            if (is_string($firstValue) && (str_starts_with($firstValue, '{') || str_starts_with($firstValue, '['))) {
+                $decoded = json_decode($firstValue, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    if (isset($decoded['articles']) && is_array($decoded['articles'])) {
+                        return $decoded['articles'];
+                    }
+                    if (is_array($decoded) && $this->isArticleArray($decoded)) {
+                        return $decoded;
+                    }
+                }
             }
         }
 

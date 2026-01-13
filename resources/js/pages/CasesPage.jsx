@@ -44,7 +44,7 @@ const CasesPage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-linear-to-br from-slate-50 via-purple-50/30 to-indigo-50/30 pt-6">
+        <div className="min-h-screen bg-linear-to-br from-slate-50 via-purple-50/30 to-indigo-50/30 pt-6 px-4 sm:px-8">
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 {/* Header */}
                 <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-purple-600 via-violet-600 to-indigo-600 p-8 shadow-2xl shadow-purple-500/20">

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Scale, Shield, Eye, EyeOff, ArrowRight, Loader2, CheckCircle2, Globe } from 'lucide-react';
+import { Scale, Shield, Eye, EyeOff, ArrowRight, Loader2, CheckCircle2, Globe, Sparkles, Zap, Lock } from 'lucide-react';
 import { login as loginRequest } from '@/api/auth';
 import { useAuthStore } from '@/store/authStore';
 
@@ -47,17 +47,25 @@ const LoginPage = () => {
 
     return (
         <div className="min-h-screen w-full bg-linear-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
-            {/* Animated Background Orbs */}
+            {/* Animated Background - Enhanced */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute -top-1/2 -left-1/2 w-96 h-96 bg-emerald-500/30 rounded-full blur-3xl opacity-20 animate-pulse" />
-                <div className="absolute top-1/3 -right-1/3 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl opacity-20" style={{ animationDelay: '2s' }} />
-                <div className="absolute -bottom-1/2 left-1/2 w-80 h-80 bg-indigo-500/20 rounded-full blur-3xl opacity-20" />
+                {/* Main gradient orbs */}
+                <div className="absolute -top-1/2 -left-1/2 w-[600px] h-[600px] bg-emerald-500/20 rounded-full blur-3xl floating-slow" />
+                <div className="absolute top-1/4 -right-1/4 w-[500px] h-[500px] bg-blue-500/15 rounded-full blur-3xl floating-delayed" />
+                <div className="absolute -bottom-1/3 left-1/3 w-[400px] h-[400px] bg-purple-500/15 rounded-full blur-3xl floating" />
+                <div className="absolute top-1/2 left-1/4 w-[300px] h-[300px] bg-cyan-500/10 rounded-full blur-2xl floating-slow" />
+                
+                {/* Rotating gradient ring */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] opacity-20">
+                    <div className="absolute inset-0 rounded-full border-2 border-emerald-500/30 animate-rotate-slow" />
+                    <div className="absolute inset-8 rounded-full border border-cyan-500/20 animate-counter-rotate" />
+                </div>
                 
                 {/* Grid Background */}
-                <div className="absolute inset-0 opacity-5">
+                <div className="absolute inset-0 opacity-[0.03]">
                     <div className="absolute inset-0" style={{
-                        backgroundImage: 'linear-gradient(0deg, transparent 24%, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.05) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, 0.05) 75%, rgba(255, 255, 255, 0.05) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.05) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, 0.05) 75%, rgba(255, 255, 255, 0.05) 76%, transparent 77%, transparent)',
-                        backgroundSize: '50px 50px'
+                        backgroundImage: 'linear-gradient(0deg, transparent 24%, rgba(255, 255, 255, 0.08) 25%, rgba(255, 255, 255, 0.08) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, 0.08) 75%, rgba(255, 255, 255, 0.08) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(255, 255, 255, 0.08) 25%, rgba(255, 255, 255, 0.08) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, 0.08) 75%, rgba(255, 255, 255, 0.08) 76%, transparent 77%, transparent)',
+                        backgroundSize: '60px 60px'
                     }} />
                 </div>
             </div>

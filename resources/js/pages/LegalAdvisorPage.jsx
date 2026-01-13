@@ -74,10 +74,14 @@ const LegalAdvisorPage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-linear-to-br from-slate-50 via-amber-50/30 to-yellow-50/30">
+        <div className="min-h-screen bg-linear-to-br from-slate-50 via-amber-50/30 to-yellow-50/30 pt-6 px-4 sm:px-8">
             {/* Header */}
-            <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-amber-600 via-yellow-600 to-orange-600 p-8 shadow-2xl shadow-amber-500/20 mb-8 mx-6 mt-6">
+            <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-amber-600 via-yellow-600 to-orange-600 p-8 shadow-2xl shadow-amber-500/20 mb-8">
                 <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjEiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-30" />
+                
+                {/* Floating decorative elements */}
+                <div className="absolute top-4 right-[10%] w-32 h-32 bg-white/10 rounded-full blur-3xl floating-slow" />
+                <div className="absolute bottom-4 left-1/4 w-24 h-24 bg-yellow-300/20 rounded-full blur-2xl floating-delayed" />
                 <div className="relative flex items-center gap-4">
                     <div className="p-3 rounded-xl bg-white/20 backdrop-blur-sm shadow-lg">
                         <Scale className="h-8 w-8 text-white" />

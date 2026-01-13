@@ -53,13 +53,13 @@ const DecisionCard = ({ decision }) => {
         <Card className="group overflow-hidden border-slate-200/60 bg-white shadow-lg hover:shadow-2xl hover:scale-[1.02] transition-all duration-300">
             <CardContent className="p-0">
                 {/* Header with Case Number and Status - Enhanced with Colors */}
-                <div className={`relative overflow-hidden bg-linear-to-br ${getStatusColor(decision.status)} px-6 py-6 border-b border-white/20`}>
-                    {/* Animated background pattern */}
-                    <div className="absolute inset-0 bg-[linear-linear(45deg,transparent_25%,rgba(255,255,255,.05)_25%,rgba(255,255,255,.05)_50%,transparent_50%,transparent_75%,rgba(255,255,255,.05)_75%,rgba(255,255,255,.05))] bg-size-[20px_20px] animate-[move_2s_linear_infinite]"></div>
+                <div className="relative overflow-hidden bg-linear-to-br from-emerald-600 via-teal-600 to-cyan-600 px-6 py-6 border-b border-white/20">
+                    {/* Background Pattern */}
+                    <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjEiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-30" />
                     
                     {/* Decorative circles */}
-                    <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
-                    <div className="absolute -bottom-6 -left-6 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
+                    <div className="absolute -top-6 -right-6 w-20 h-20 bg-white/10 rounded-full blur-2xl"></div>
+                    <div className="absolute -bottom-4 -left-4 w-16 h-16 bg-cyan-300/20 rounded-full blur-xl"></div>
                     
                     <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div className="flex-1">
@@ -193,11 +193,15 @@ const PublicPortalPage = () => {
     }, [decisions, searchQuery, filterStatus]);
 
     return (
-        <div className="min-h-screen bg-linear-to-br from-slate-50 via-emerald-50/30 to-teal-50/30">
+        <div className="min-h-screen bg-linear-to-br from-slate-50 via-emerald-50/30 to-teal-50/30 pt-6 px-4 sm:px-8">
             {/* Hero Header with Official PTA Bandung Branding */}
-            <header className="relative overflow-hidden rounded-2xl bg-linear-to-br from-emerald-600 via-teal-600 to-cyan-600 p-8 shadow-2xl shadow-emerald-500/20 mb-8 mx-4 mt-4">
+            <header className="relative overflow-hidden rounded-2xl bg-linear-to-br from-emerald-600 via-teal-600 to-cyan-600 p-8 shadow-2xl shadow-emerald-500/20 mb-8">
                 {/* Background Pattern */}
                 <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjEiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-30" />
+                
+                {/* Floating decorative elements */}
+                <div className="absolute top-4 right-4 w-32 h-32 bg-white/10 rounded-full blur-3xl floating-slow" />
+                <div className="absolute bottom-4 left-1/3 w-24 h-24 bg-cyan-300/20 rounded-full blur-2xl floating-delayed" />
                 
                 <div className="relative z-20">
                     <div className="flex flex-col md:flex-row md:items-start justify-between gap-8 mb-8">
@@ -213,45 +217,54 @@ const PublicPortalPage = () => {
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <div className="mb-2 inline-block px-3 py-1 rounded-full bg-white/20 text-white border border-white/30 backdrop-blur-sm text-xs font-semibold uppercase tracking-wide">
+                                    <Badge className="mb-3 bg-white/20 text-white border-white/30 backdrop-blur-sm hover:bg-white/30">
+                                        <Eye className="h-3.5 w-3.5 mr-1.5" />
                                         Portal Publik
-                                    </div>
-                                    <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight leading-tight">
-                                        Pengadilan Tinggi Agama
-                                        <span className="block text-emerald-50 mt-1">
-                                            Kota Bandung
-                                        </span>
+                                    </Badge>
+                                    <h1 className="text-4xl font-black text-white tracking-tight mb-2">
+                                        Pengadilan Tinggi Agama Bandung
                                     </h1>
                                 </div>
                             </div>
                             
-                            <p className="text-lg text-emerald-50 leading-relaxed max-w-2xl">
-                                Akses transparan ke ringkasan putusan yang telah dipublikasikan dan diverifikasi secara resmi oleh Pengadilan Tinggi Agama.
+                            <p className="text-emerald-50 text-lg">
+                                Akses transparan ke ringkasan putusan yang telah dipublikasikan dan diverifikasi secara resmi
                             </p>
                             
-                            {token && (
-                                <div className="mt-6 inline-flex items-center gap-3 px-4 py-2.5 rounded-xl bg-white/20 border border-white/30 backdrop-blur-sm text-white">
-                                    <div className="h-2.5 w-2.5 rounded-full bg-yellow-400 animate-pulse"></div>
-                                    <span className="text-sm font-medium">Masuk sebagai <span className="font-bold">{user?.name ?? 'Pengguna'}</span></span>
+                            {/* Quick Stats in Header */}
+                            <div className="flex flex-wrap gap-4 mt-6">
+                                <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/15 backdrop-blur-sm border border-white/20">
+                                    <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                                    <span className="text-sm font-medium text-white">{decisions.length} putusan tersedia</span>
                                 </div>
-                            )}
+                                {token && (
+                                    <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/15 backdrop-blur-sm border border-white/20">
+                                        <div className="h-2 w-2 rounded-full bg-yellow-400 animate-pulse" />
+                                        <span className="text-sm font-medium text-white">{user?.name ?? 'Pengguna'}</span>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
-                        <div className="shrink-0">
+                        <div className="flex flex-col gap-3">
                             {token ? (
                                 <Button 
-                                    variant="outline" 
+                                    variant="outline"
                                     onClick={handleLogout} 
                                     disabled={isLoggingOut}
-                                    className="gap-2 bg-white/10 border-white/30 text-white hover:bg-white/20 backdrop-blur-sm"
+                                    className="bg-white/10 text-white border-white/30 hover:bg-white/20 h-10 text-sm"
                                 >
-                                    {isLoggingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
+                                    {isLoggingOut ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogOut className="mr-2 h-4 w-4" />}
                                     Keluar
                                 </Button>
                             ) : (
-                                <Button className="bg-white text-emerald-700 hover:bg-emerald-50 shadow-xl shadow-black/10 border-0 font-semibold gap-2" asChild>
+                                <Button 
+                                    className="bg-white text-emerald-700 hover:bg-emerald-50 shadow-xl shadow-black/10 border-0 h-12 px-6 text-base font-semibold btn-shine"
+                                    asChild
+                                >
                                     <Link to="/login">
-                                        Log out
+                                        <Scale className="mr-2 h-5 w-5" />
+                                        Login
                                     </Link>
                                 </Button>
                             )}
@@ -317,28 +330,33 @@ const PublicPortalPage = () => {
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 {/* Header Section for Decisions List */}
                 {!isLoading && decisions.length > 0 && (
-                    <div className="relative overflow-hidden rounded-2xl bg-linear-to-r from-slate-800 via-slate-700 to-slate-800 p-6 shadow-xl shadow-slate-900/20 mb-8">
+                    <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-emerald-600 via-teal-600 to-cyan-600 p-6 shadow-2xl shadow-emerald-500/20 mb-8">
                         {/* Background Pattern */}
-                        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjEiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-20" />
+                        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjEiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-30" />
+                        
+                        {/* Floating decorative elements */}
+                        <div className="absolute top-2 right-2 w-20 h-20 bg-white/10 rounded-full blur-2xl" />
+                        <div className="absolute bottom-2 left-1/4 w-16 h-16 bg-cyan-300/20 rounded-full blur-xl" />
+                        
                         <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                             <div className="flex items-center gap-4">
-                                <div className="p-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 shadow-lg">
+                                <div className="p-3 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 shadow-lg">
                                     <FileText className="h-6 w-6 text-white" />
                                 </div>
                                 <div>
-                                    <div className="mb-1.5 inline-block px-2.5 py-1 rounded-full bg-white/10 text-white border border-white/20 backdrop-blur-sm text-[10px] font-bold uppercase tracking-wider">
+                                    <Badge className="mb-2 bg-white/20 text-white border-white/30 backdrop-blur-sm text-[10px] font-bold uppercase tracking-wider">
                                         Database Putusan
-                                    </div>
-                                    <h2 className="text-2xl font-bold text-white tracking-tight">
+                                    </Badge>
+                                    <h2 className="text-2xl font-black text-white tracking-tight">
                                         Daftar Putusan Terbaru
                                     </h2>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3">
-                                <div className="px-4 py-2.5 rounded-xl bg-emerald-500/20 border border-emerald-400/30 backdrop-blur-sm">
-                                    <p className="text-xs text-emerald-100 font-medium">
-                                        Total: <span className="font-bold text-white text-lg ml-1">{filteredDecisions.length}</span>
-                                        <span className="text-emerald-200 ml-1">putusan</span>
+                                <div className="px-4 py-2.5 rounded-xl bg-white/15 backdrop-blur-sm border border-white/20">
+                                    <p className="text-xs text-white font-medium">
+                                        Total: <span className="font-bold text-2xl ml-1">{filteredDecisions.length}</span>
+                                        <span className="text-emerald-100 ml-1">putusan</span>
                                     </p>
                                 </div>
                             </div>

@@ -91,26 +91,31 @@ const SettingsPage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-linear-to-br from-slate-50 via-violet-50/30 to-purple-50/30">
+        <div className="min-h-screen bg-linear-to-br from-slate-50 via-violet-50/30 to-purple-50/30 pt-6 px-4 sm:px-8 pb-12">
             {/* Header */}
-            <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-violet-600 via-purple-600 to-fuchsia-600 p-8 shadow-2xl shadow-violet-500/20 mb-8 mx-6 mt-6">
+            <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-violet-600 via-purple-600 to-fuchsia-600 p-8 shadow-2xl shadow-violet-500/20 mb-8">
                 <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjEiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-30" />
+                
+                {/* Floating decorative elements */}
+                <div className="absolute top-4 right-[10%] w-32 h-32 bg-white/10 rounded-full blur-3xl floating-slow" />
+                <div className="absolute bottom-4 left-1/4 w-24 h-24 bg-fuchsia-300/20 rounded-full blur-2xl floating-delayed" />
+                
                 <div className="relative flex items-center gap-4">
-                    <div className="p-3 rounded-xl bg-white/20 backdrop-blur-sm shadow-lg">
+                    <div className="p-4 rounded-2xl bg-white/20 backdrop-blur-sm shadow-lg border border-white/20">
                         <Settings className="h-8 w-8 text-white" />
                     </div>
                     <div>
-                        <div className="mb-2 inline-block px-3 py-1 rounded-full bg-white/20 text-white border border-white/30 backdrop-blur-sm text-xs font-semibold uppercase tracking-wide">
-                            <User className="inline h-3 w-3 mr-1.5 -mt-0.5" />
+                        <div className="mb-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-white border border-white/30 backdrop-blur-sm text-xs font-bold uppercase tracking-wider">
+                            <User className="h-3.5 w-3.5" />
                             Pengaturan Akun
                         </div>
-                        <h1 className="text-3xl font-bold text-white tracking-tight mb-1">Pengaturan</h1>
+                        <h1 className="text-4xl font-black text-white tracking-tight mb-1">Pengaturan</h1>
                         <p className="text-violet-50 text-lg">Kelola preferensi akun dan keamanan anda</p>
                     </div>
                 </div>
             </div>
 
-            <div className="px-6 max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Content wrapper removed the old header */}
 
             <div className="grid lg:grid-cols-12 gap-6">

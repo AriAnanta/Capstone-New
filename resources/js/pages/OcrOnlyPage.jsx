@@ -164,17 +164,34 @@ const OcrOnlyPage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-linear-to-br from-slate-50 via-amber-50/30 to-orange-50/30">
+        <div className="min-h-screen bg-linear-to-br from-slate-50 via-amber-50/30 to-orange-50/30 pt-6 px-4 sm:px-8">
             {/* Header */}
-            <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-amber-500 via-orange-500 to-red-500 p-8 shadow-2xl shadow-amber-500/20 mx-4 sm:mx-8 mt-4 mb-8">
+            <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-amber-500 via-orange-500 to-red-500 p-8 shadow-2xl shadow-amber-500/20 mb-8">
                 <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjEiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-30" />
+                
+                {/* Floating decorative elements */}
+                <div className="absolute top-4 right-4 w-32 h-32 bg-white/10 rounded-full blur-3xl floating-slow" />
+                <div className="absolute bottom-4 left-1/3 w-24 h-24 bg-yellow-300/20 rounded-full blur-2xl floating-delayed" />
+                
                 <div className="relative">
-                    <div className="mb-3 inline-block px-3 py-1 rounded-full bg-white/20 text-white border border-white/30 backdrop-blur-sm text-xs font-semibold uppercase tracking-wide">
-                        <FileText className="inline h-3 w-3 mr-1.5 -mt-0.5" />
+                    <div className="mb-3 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 text-white border border-white/30 backdrop-blur-sm text-xs font-bold uppercase tracking-wider">
+                        <FileText className="h-4 w-4" />
                         OCR Processing
                     </div>
-                    <h1 className="text-3xl font-bold text-white tracking-tight mb-2">OCR Dokumen</h1>
+                    <h1 className="text-4xl font-black text-white tracking-tight mb-2">OCR Dokumen</h1>
                     <p className="text-amber-50 text-lg">Upload dokumen untuk ekstraksi teks otomatis tanpa perkara</p>
+                    
+                    {/* Quick stats */}
+                    <div className="flex flex-wrap gap-3 mt-5">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/15 backdrop-blur-sm border border-white/20">
+                            <CheckCircle2 className="h-4 w-4 text-emerald-300" />
+                            <span className="text-sm font-medium text-white">{data?.data?.filter(d => d.status_ocr === 'completed').length || 0} selesai</span>
+                        </div>
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/15 backdrop-blur-sm border border-white/20">
+                            <Clock className="h-4 w-4 text-yellow-300" />
+                            <span className="text-sm font-medium text-white">{data?.data?.filter(d => d.status_ocr === 'processing' || d.status_ocr === 'pending').length || 0} diproses</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -183,11 +200,16 @@ const OcrOnlyPage = () => {
                     
                     {/* Upload Form */}
                     <div className="lg:col-span-1">
-                        <div className="bg-white rounded-2xl shadow-xl border-2 border-blue-200 p-6 sticky top-8">
-                            <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                                <Upload className="h-5 w-5 text-blue-600" />
-                                Upload Dokumen
-                            </h2>
+                        <div className="bg-white rounded-2xl shadow-xl shadow-amber-200/40 border border-amber-200/60 p-6 sticky top-8 hover:shadow-2xl transition-shadow duration-300">
+                            <div className="flex items-center gap-3 mb-5">
+                                <div className="p-3 rounded-xl bg-linear-to-br from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/30">
+                                    <Upload className="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-bold text-slate-900">Upload Dokumen</h2>
+                                    <p className="text-sm text-slate-500">Unggah file untuk OCR</p>
+                                </div>
+                            </div>
                             
                             <form onSubmit={handleUpload} className="space-y-4">
                                 <div>
@@ -257,10 +279,10 @@ const OcrOnlyPage = () => {
                                 <button
                                     type="submit"
                                     disabled={!selectedFile || uploadProgress}
-                                    className={`w-full py-3 rounded-xl font-semibold transition-all shadow-lg flex items-center justify-center gap-2 ${
+                                    className={`w-full py-3.5 rounded-xl font-bold transition-all shadow-lg flex items-center justify-center gap-2 btn-shine ${
                                         !selectedFile || uploadProgress
-                                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                            : 'bg-linear-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 hover:shadow-xl'
+                                            ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                                            : 'bg-linear-to-r from-amber-500 to-orange-600 text-white hover:from-amber-600 hover:to-orange-700 hover:shadow-xl hover:shadow-amber-500/30 hover:-translate-y-0.5'
                                     }`}
                                 >
                                     {uploadProgress ? (
@@ -282,22 +304,22 @@ const OcrOnlyPage = () => {
                     {/* Documents List */}
                     <div className="lg:col-span-2 space-y-6">
                         {/* Search */}
-                        <div className="bg-white rounded-2xl shadow-xl border-2 border-purple-200 p-4">
+                        <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-200/60 p-4">
                             <div className="relative">
-                                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
                                 <input
                                     type="text"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     placeholder="Cari berdasarkan nama file atau teks OCR..."
-                                    className="w-full pl-12 pr-12 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-purple-200 focus:border-purple-500 transition-all"
+                                    className="w-full pl-12 pr-12 py-3.5 border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-amber-100 focus:border-amber-400 transition-all bg-slate-50/50 focus:bg-white"
                                 />
                                 {searchTerm && (
                                     <button
                                         onClick={() => setSearchTerm('')}
-                                        className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                        className="absolute right-4 top-1/2 transform -translate-y-1/2 p-1 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-all"
                                     >
-                                        <X className="h-5 w-5" />
+                                        <X className="h-4 w-4" />
                                     </button>
                                 )}
                             </div>
@@ -397,63 +419,77 @@ const OcrOnlyPage = () => {
                                             </div>
                                         </div>
 
-                                        {/* OCR Result */}
+                                        {/* OCR Result - Enhanced with gradient border */}
                                         {doc.status_ocr === 'completed' && doc.teks_ocr ? (
-                                            <div className="mb-4 bg-linear-to-br from-slate-900 to-slate-800 rounded-xl p-4 border-2 border-slate-700">
-                                                <div className="flex items-center justify-between mb-3">
-                                                    <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">
-                                                        Hasil OCR ({doc.teks_ocr.length} karakter)
-                                                    </span>
-                                                    <div className="flex items-center gap-2">
-                                                        {doc.teks_ocr.length > 500 && (
+                                            <div className="mb-4 relative rounded-xl overflow-hidden">
+                                                {/* Gradient border effect */}
+                                                <div className="absolute inset-0 bg-linear-to-r from-emerald-500 via-teal-500 to-cyan-500 rounded-xl" />
+                                                <div className="relative m-[2px] bg-linear-to-br from-slate-900 to-slate-800 rounded-[10px] p-4">
+                                                    <div className="flex items-center justify-between mb-3">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                                                            <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">
+                                                                Hasil OCR
+                                                            </span>
+                                                            <span className="text-xs text-slate-500 font-medium">
+                                                                ({doc.teks_ocr.length.toLocaleString()} karakter)
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            {doc.teks_ocr.length > 500 && (
+                                                                <button
+                                                                    onClick={() => toggleExpandOcr(doc.id)}
+                                                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700/80 hover:bg-slate-600 text-white rounded-lg text-xs font-semibold transition-all hover:-translate-y-0.5"
+                                                                >
+                                                                    {expandedOcrIds.has(doc.id) ? 'Sembunyikan' : 'Lihat Semua'}
+                                                                </button>
+                                                            )}
+                                                            <button
+                                                                onClick={() => handleCopyOcr(doc.teks_ocr, doc.id)}
+                                                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:-translate-y-0.5 ${
+                                                                    copiedId === doc.id 
+                                                                        ? 'bg-emerald-500 text-white' 
+                                                                        : 'bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-lg shadow-emerald-500/20'
+                                                                }`}
+                                                            >
+                                                                {copiedId === doc.id ? (
+                                                                    <>
+                                                                        <Check className="h-3.5 w-3.5" />
+                                                                        Tersalin!
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <Copy className="h-3.5 w-3.5" />
+                                                                        Salin Teks
+                                                                    </>
+                                                                )}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <div className={`overflow-y-auto custom-scrollbar ${expandedOcrIds.has(doc.id) ? 'max-h-[400px]' : 'max-h-48'}`}>
+                                                        <pre className="text-sm text-slate-300 whitespace-pre-wrap font-mono leading-relaxed">
+                                                            {expandedOcrIds.has(doc.id) 
+                                                                ? doc.teks_ocr 
+                                                                : (doc.teks_ocr.length > 500 
+                                                                    ? doc.teks_ocr.substring(0, 500) + '...' 
+                                                                    : doc.teks_ocr)
+                                                            }
+                                                        </pre>
+                                                    </div>
+                                                    {expandedOcrIds.has(doc.id) && doc.teks_ocr.length > 500 && (
+                                                        <div className="mt-3 pt-3 border-t border-slate-700/50">
                                                             <button
                                                                 onClick={() => toggleExpandOcr(doc.id)}
-                                                                className="flex items-center gap-1 px-3 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-xs font-medium transition-all"
+                                                                className="text-xs text-slate-400 hover:text-emerald-400 transition-colors flex items-center gap-1.5 font-medium"
                                                             >
-                                                                {expandedOcrIds.has(doc.id) ? 'Sembunyikan' : 'Lihat Semua'}
+                                                                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                                                </svg>
+                                                                Sembunyikan
                                                             </button>
-                                                        )}
-                                                        <button
-                                                            onClick={() => handleCopyOcr(doc.teks_ocr, doc.id)}
-                                                            className="flex items-center gap-1 px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-medium transition-all"
-                                                        >
-                                                            {copiedId === doc.id ? (
-                                                                <>
-                                                                    <Check className="h-3 w-3" />
-                                                                    Tersalin
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <Copy className="h-3 w-3" />
-                                                                    Salin
-                                                                </>
-                                                            )}
-                                                        </button>
-                                                    </div>
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                <div className={`overflow-y-auto ${expandedOcrIds.has(doc.id) ? 'max-h-96' : 'max-h-48'}`}>
-                                                    <pre className="text-xs text-slate-300 whitespace-pre-wrap font-mono leading-relaxed">
-                                                        {expandedOcrIds.has(doc.id) 
-                                                            ? doc.teks_ocr 
-                                                            : (doc.teks_ocr.length > 500 
-                                                                ? doc.teks_ocr.substring(0, 500) + '...' 
-                                                                : doc.teks_ocr)
-                                                        }
-                                                    </pre>
-                                                </div>
-                                                {expandedOcrIds.has(doc.id) && doc.teks_ocr.length > 500 && (
-                                                    <div className="mt-3 pt-3 border-t border-slate-700">
-                                                        <button
-                                                            onClick={() => toggleExpandOcr(doc.id)}
-                                                            className="text-xs text-slate-400 hover:text-white transition-colors flex items-center gap-1"
-                                                        >
-                                                            <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                                                            </svg>
-                                                            Sembunyikan
-                                                        </button>
-                                                    </div>
-                                                )}
                                             </div>
                                         ) : doc.status_ocr === 'pending' || doc.status_ocr === 'processing' ? (
                                             <div className="mb-4 p-4 bg-linear-to-r from-yellow-50 to-amber-50 border-2 border-yellow-200 rounded-xl">
@@ -461,7 +497,7 @@ const OcrOnlyPage = () => {
                                                     <RefreshCw className="h-5 w-5 animate-spin text-yellow-600 shrink-0" />
                                                     <div>
                                                         <p className="text-sm font-semibold text-yellow-800">
-                                                            {doc.status_ocr === 'pending' ? 'Menunggu antrian...' : 'Sedang memproses OCR...'}
+                                                            {doc.status_ocr === 'pending' ? 'Sedang diproses...' : 'Sedang memproses OCR...'}
                                                         </p>
                                                         <p className="text-xs text-yellow-600 mt-1">
                                                             Halaman akan otomatis diperbarui setiap 3 detik
@@ -483,11 +519,11 @@ const OcrOnlyPage = () => {
                                             </div>
                                         ) : null}
 
-                                        {/* Actions */}
-                                        <div className="flex flex-wrap gap-2">
+                                        {/* Actions - Enhanced */}
+                                        <div className="flex flex-wrap gap-2 pt-3 border-t border-slate-100">
                                             <button
                                                 onClick={() => handleDownload(doc.id, doc.nama_file)}
-                                                className="flex items-center gap-2 px-4 py-2 bg-linear-to-r from-blue-500 to-indigo-500 text-white rounded-lg hover:from-blue-600 hover:to-indigo-600 transition-all shadow-md hover:shadow-xl font-medium text-sm"
+                                                className="flex items-center gap-2 px-4 py-2.5 bg-linear-to-r from-blue-500 to-indigo-500 text-white rounded-xl hover:from-blue-600 hover:to-indigo-600 transition-all shadow-lg shadow-blue-500/20 hover:shadow-xl hover:shadow-blue-500/30 font-semibold text-sm hover:-translate-y-0.5"
                                             >
                                                 <Download className="h-4 w-4" />
                                                 Download
@@ -496,7 +532,7 @@ const OcrOnlyPage = () => {
                                             <button
                                                 onClick={() => reprocessMutation.mutate(doc.id)}
                                                 disabled={reprocessMutation.isPending}
-                                                className="flex items-center gap-2 px-4 py-2 bg-linear-to-r from-green-500 to-teal-500 text-white rounded-lg hover:from-green-600 hover:to-teal-600 transition-all shadow-md hover:shadow-xl font-medium text-sm"
+                                                className="flex items-center gap-2 px-4 py-2.5 bg-linear-to-r from-emerald-500 to-teal-500 text-white rounded-xl hover:from-emerald-600 hover:to-teal-600 transition-all shadow-lg shadow-emerald-500/20 hover:shadow-xl hover:shadow-emerald-500/30 font-semibold text-sm hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 <RefreshCw className={`h-4 w-4 ${reprocessMutation.isPending ? 'animate-spin' : ''}`} />
                                                 Proses Ulang
@@ -508,7 +544,7 @@ const OcrOnlyPage = () => {
                                                         deleteMutation.mutate(doc.id);
                                                     }
                                                 }}
-                                                className="flex items-center gap-2 px-4 py-2 bg-linear-to-r from-red-500 to-pink-500 text-white rounded-lg hover:from-red-600 hover:to-pink-600 transition-all shadow-md hover:shadow-xl font-medium text-sm"
+                                                className="flex items-center gap-2 px-4 py-2.5 bg-linear-to-r from-rose-500 to-pink-500 text-white rounded-xl hover:from-rose-600 hover:to-pink-600 transition-all shadow-lg shadow-rose-500/20 hover:shadow-xl hover:shadow-rose-500/30 font-semibold text-sm hover:-translate-y-0.5"
                                             >
                                                 <Trash2 className="h-4 w-4" />
                                                 Hapus

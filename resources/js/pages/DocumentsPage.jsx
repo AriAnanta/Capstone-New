@@ -67,7 +67,7 @@ const DocumentsPage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-linear-to-br from-slate-50 via-emerald-50/30 to-teal-50/30 pt-6">
+        <div className="min-h-screen bg-linear-to-br from-slate-50 via-emerald-50/30 to-teal-50/30 pt-6 px-4 sm:px-8">
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 {/* Header */}
                 <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-emerald-600 via-teal-600 to-cyan-600 p-8 shadow-2xl shadow-emerald-500/20">
@@ -93,8 +93,8 @@ const DocumentsPage = () => {
                     </div>
                 </div>
 
-                {/* Search & Filter Bar */}
-                <Card className="border-slate-200/60 shadow-xl shadow-slate-200/50 bg-white mt-4">
+                {/* Search & Filter Bar - Sticky */}
+                <Card className="border-slate-200/60 shadow-xl shadow-slate-200/50 bg-white/95 backdrop-blur-sm sticky top-20 z-30">
                     <CardContent className="p-6 space-y-3">
                         <div className="flex flex-col sm:flex-row gap-3 mt-5">
                             <div className="flex-1 relative">

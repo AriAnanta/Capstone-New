@@ -177,21 +177,26 @@ const AnonymizationPage = () => {
     const isProcessing = processFileMutation.isPending || processTextMutation.isPending;
 
     return (
-        <div className="min-h-screen bg-linear-to-br from-slate-50 via-violet-50/30 to-purple-50/30">
+        <div className="min-h-screen bg-linear-to-br from-slate-50 via-violet-50/30 to-purple-50/30 pt-6 px-4 sm:px-8">
             {/* Header */}
-            <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-violet-600 via-purple-600 to-indigo-700 p-8 shadow-2xl shadow-purple-500/20 mx-4 sm:mx-8 mt-4 mb-8">
+            <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-violet-600 via-purple-600 to-indigo-700 p-8 shadow-2xl shadow-purple-500/20 mb-8">
                 <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjEiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-30" />
+                
+                {/* Floating decorative elements */}
+                <div className="absolute top-4 right-[10%] w-32 h-32 bg-white/10 rounded-full blur-3xl floating-slow" />
+                <div className="absolute bottom-4 left-1/4 w-24 h-24 bg-indigo-300/20 rounded-full blur-2xl floating-delayed" />
+                
                 <div className="relative">
-                    <div className="mb-3 inline-block px-3 py-1 rounded-full bg-white/20 text-white border border-white/30 backdrop-blur-sm text-xs font-semibold uppercase tracking-wide">
-                        <Shield className="inline h-3 w-3 mr-1.5 -mt-0.5" />
+                    <div className="mb-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-white border border-white/30 backdrop-blur-sm text-xs font-bold uppercase tracking-wider">
+                        <Shield className="h-3.5 w-3.5" />
                         Data Privacy Protection
                     </div>
-                    <h1 className="text-3xl font-bold text-white tracking-tight mb-2">Anonimisasi Dokumen</h1>
+                    <h1 className="text-4xl font-black text-white tracking-tight mb-2">Anonimisasi Dokumen</h1>
                     <p className="text-purple-100 text-lg">Lindungi data pribadi dalam dokumen putusan pengadilan dengan AI</p>
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8">
+            <div className="max-w-7xl mx-auto">
                 <div className="grid lg:grid-cols-2 gap-8">
                     
                     {/* Input Section */}
